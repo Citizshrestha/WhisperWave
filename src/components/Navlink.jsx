@@ -48,7 +48,7 @@ const Navlink = () => {
         
               <button className="block lg:hidden lg:text-[1.75rem] text-[1.38rem] ">
                 <RiArrowDownFill color="#fff" />
-              </button>
+              </button> 
             
        </main>
     </section>
