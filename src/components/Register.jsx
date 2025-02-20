@@ -1,4 +1,4 @@
-import React from 'react'
+// import React from 'react'
 import { FaUserPlus } from 'react-icons/fa'
 
 const Register = () => {
@@ -17,8 +17,15 @@ const Register = () => {
            </div>
 
            <div className="w-full">
-              <button className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>Register <FaUserPlus/></button>
+              <button className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
+                Register <FaUserPlus/>
+                </button>
            </div>
+
+           <div className="mt-5 text-center text-gray-400 text-sm ">
+              <button>Already have an account? Sign In</button>
+           </div>
+
        </div>
    </section>
   )
