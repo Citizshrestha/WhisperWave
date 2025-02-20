@@ -13,8 +13,8 @@ const App = () => {
        {/* <Navlink/>
        <ChatList/>
        <Chatbox/>*/}
-       <Login/> 
-       {/* <Register/> */}
+       {/* <Login/>  */}
+       <Register/>
     </div>
   )
 }

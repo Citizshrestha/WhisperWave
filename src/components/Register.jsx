@@ -1,7 +1,22 @@
 // import React from 'react'
+import { useState } from 'react'
 import { FaUserPlus } from 'react-icons/fa'
 
+
 const Register = () => {
+   const [userData, setUserData] = useState({fullName: "", email: "", password: ""});
+
+   const handleChangeUserData = (e) => {
+      e.preventDefault();
+      const {name,value} = e.target;
+      setUserData((prevState) => ({
+         ...prevState,
+         [name]: value
+      }))
+      
+   }
+   console.log(userData);
+   
   return (
    <section className='flex flex-col items-center justify-center h-[100vh] background-image'>
        <div className='p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center'>
@@ -11,9 +26,9 @@ const Register = () => {
            </div>
            
            <div className="w-full ">
-                <input className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] mb-3 font-medium outline-none placeholder:text-[#004939858]  ' type="text" name="" id="" placeholder='Full Name' required/>
-                <input className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3]  mb-3 font-medium outline-none placeholder:text-[#004939858] ' type="email" name="" id="" placeholder='Email'  required/>
-                <input className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3]  mb-3 font-medium outline-none placeholder:text-[#004939858] ' type="password" name="" id="" placeholder='Password' required/>
+                <input type="text" name="fullName" id="fullName" onChange={handleChangeUserData} className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] mb-3 font-medium outline-none placeholder:text-[#004939858]  '  placeholder='Full Name' required/>
+               <input type="email" name="email" id="email" onChange={handleChangeUserData} className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3]  mb-3 font-medium outline-none placeholder:text-[#004939858] ' placeholder='Email'  required/>
+                <input type="password" name="password" id="password" onChange={handleChangeUserData} className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3]  mb-3 font-medium outline-none placeholder:text-[#004939858] ' placeholder='Password' required/>
            </div>
 
            <div className="w-full">
