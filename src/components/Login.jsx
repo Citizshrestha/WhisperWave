@@ -1,8 +1,28 @@
 // import React from 'react'
+import { useState } from 'react'
 import { FaSignInAlt } from 'react-icons/fa'
 
 const Login = () => {
-  return (
+  const [userData, setUserData] = useState({email:"", password: ""});
+  const handleChangeUserData = (e) => {
+    e.preventDefault();
+    const {name,value} =e.target;
+    setUserData((prevData) => ({
+      ...prevData,
+      [name]: value
+    }))
+  }
+
+
+  const handleAuth = async () => {
+    try {
+      alert("Login Successful");
+    } catch (error) {
+      alert("Login Failed! Some error occured"+ error);
+    }
+  }
+
+    return (
     <section className='flex flex-col items-center justify-center h-[100vh] background-image'>
     <div className='p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center'>
         <div className='mb-10'>
@@ -11,12 +31,12 @@ const Login = () => {
         </div>
         
         <div className="w-full ">
-             <input className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] mb-3 font-medium outline-none placeholder:text-[#004939858]  ' type="text" name="" id="" placeholder='Full Name' required/>
-             <input className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3]  mb-3 font-medium outline-none placeholder:text-[#004939858] ' type="password" name="" id="" placeholder='Password' required/>
+             <input name="email" onChange={handleChangeUserData} className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] mb-3 font-medium outline-none placeholder:text-[#004939858]  ' type="email"  id="email" placeholder='Email' required/>
+             <input name="password" onChange={handleChangeUserData} className='w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3]  mb-3 font-medium outline-none placeholder:text-[#004939858] ' type="password"  id="password" placeholder='Password' required/>
         </div>
 
         <div className="w-full">
-           <button className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
+           <button onClick={handleAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
              Login <FaSignInAlt/>
              </button>
         </div>

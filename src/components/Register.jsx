@@ -15,7 +15,16 @@ const Register = () => {
       }))
       
    }
-   console.log(userData);
+    
+   const handleAuth = async () => {
+      try {
+         alert("Registration Successful");
+      } catch (error) {
+        alert("Registration Failed! Some error occured"+ error); 
+      }
+   }
+   console.log(userData.email)
+   console.log(userData.password)
    
   return (
    <section className='flex flex-col items-center justify-center h-[100vh] background-image'>
@@ -32,7 +41,7 @@ const Register = () => {
            </div>
 
            <div className="w-full">
-              <button className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
+              <button onClick={handleAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
                 Register <FaUserPlus/>
                 </button>
            </div>
