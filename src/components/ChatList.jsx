@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { RiMore2Fill } from "react-icons/ri";
-import defaultAvatar from "../../public/assets/default.jpg"; // Ensure this path works with your bundler
+import defaultAvatar from "../../public/assets/default.jpg"; 
 import SearchModal from "./SearchModal";
 import chatData from "../data/chatData";
 
