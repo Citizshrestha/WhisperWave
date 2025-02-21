@@ -11,15 +11,7 @@ const ChatList = () => {
     setChats(chatData);
   }, []);
 
-  // Helper function to convert timestamp to readable date
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
-    return date.toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
+
 
   return (
     <section className="relative hidden lg:flex flex-col items-start justify-start bg-white h-screen w-full md:w-[37.5rem]">
@@ -79,7 +71,7 @@ const ChatList = () => {
                 </span>
               </div>
               <p className="p-0 text-gray-400 font-regular text-left text-[11px]">
-                {formatTimestamp(chat.lastMessageTimestamp) || "Unknown Date"}
+                
               </p>
             </button>
           );
