@@ -47,7 +47,7 @@ const ChatList = () => {
           chats.map((chat) => {
             const otherUser = chat.users?.find(
               (user) => user.email !== "baxo@mailinator.com"
-            ) || { fullName: "Unknown User", image: null };
+            ) || { fullName: "Unknown User", image: {defaultAvatar} };
 
             return (
               <button
