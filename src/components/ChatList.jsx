@@ -3,7 +3,7 @@ import { RiMore2Fill } from "react-icons/ri";
 import defaultAvatar from "../../public/assets/default.jpg"; 
 import SearchModal from "./SearchModal";
 import chatData from "../data/chatData";
-
+import { formatTimeStamp   } from "../utils/formatTimeStamp";
 const ChatList = () => {
   const [chats, setChats] = useState([]);
 
@@ -71,7 +71,7 @@ const ChatList = () => {
                 </span>
               </div>
               <p className="p-0 text-gray-400 font-regular text-left text-[11px]">
-                
+                {formatTimeStamp(chat?.lastMessageTimestamp)}
               </p>
             </button>
           );
