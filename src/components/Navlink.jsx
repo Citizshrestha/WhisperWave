@@ -5,7 +5,7 @@ const Navlink = () => {
   return (
     <section className="sticky lg:items-start lg:justify-start h-[7vh] lg:h-[100vh] w-full lg:w-[9.5rem] py-8 lg:py-0 bg-[#01AA85]  top-0 flex items-center ">
        <main className="flex lg:flex-col items-center lg:gap-10 justify-between lg:px-0 w-full">
-           <div className="flex items-start justify-center lg:border-b border-b-1 border-[#fff] lg:w-full p-4 ">
+           <div className="flex h-[83px] items-start justify-center lg:border-b border-b-1 border-[#fff] lg:w-full p-4 ">
                <span className="flex items-center justify-center ">
                   <img src={logo} className="w-[3.5rem] h-[3.25rem] object-contain bg-white w-[3.6rem] h-[3rem] rounded-lg p-2" alt="Logo" />
                </span>

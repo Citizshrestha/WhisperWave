@@ -51,7 +51,7 @@ const ChatList = () => {
         </header>
       </div>
 
-      <main className="flex flex-col items-start mt-[1.5rem] pb-3 w-full">
+      <main className="flex flex-col items-start mt-[.5rem] pb-3 w-full">
         {sortedChats?.length > 0 ? (
           sortedChats.map((chat) => {
             const otherUser = chat.users?.find(
