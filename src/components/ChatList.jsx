@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RiMore2Fill } from "react-icons/ri";
 import defaultAvatar from "../../public/assets/default.jpg"; 
 import SearchModal from "./SearchModal"; 
@@ -11,6 +11,15 @@ const ChatList = () => {
   useEffect(() => {
     setChats(chatData || []); // Fallback to empty array if chatData is undefined
   }, []);
+  
+  const sortedChats = useMemo(() => {
+      return [...chats].sort((a,b) => {
+        const aTimeStamp = a.lastMessageTimestamp.seconds + a.lastMessageTimestamp.nanoseconds / 1e9;
+        const bTimeStamp =  b.lastMessageTimestamp.seconds + b.lastMessageTimestamp.nanoseconds / 1e9;
+       
+        return bTimeStamp - aTimeStamp;
+      })
+  },[chats]);
 
   return (
     <section className="relative hidden lg:flex flex-col items-start justify-start bg-white h-screen w-full md:w-[37.5rem]">
@@ -43,8 +52,8 @@ const ChatList = () => {
       </div>
 
       <main className="flex flex-col items-start mt-[1.5rem] pb-3 w-full">
-        {chats?.length > 0 ? (
-          chats.map((chat) => {
+        {sortedChats?.length > 0 ? (
+          sortedChats.map((chat) => {
             const otherUser = chat.users?.find(
               (user) => user.email !== "baxo@mailinator.com"
             ) || { fullName: "Unknown User", image: {defaultAvatar} };
@@ -70,7 +79,7 @@ const ChatList = () => {
                   </span>
                 </div>
                 <p className="p-0 text-gray-400 font-regular text-left text-[11px]">
-                  {formatTimeStamp(chat.lastMessageTimestamp || { seconds: 0, nanoseconds: 0 })}
+                  {formatTimeStamp(chat?.lastMessageTimestamp || { seconds: 0, nanoseconds: 0 })}
                 </p>
               </button>
             );
