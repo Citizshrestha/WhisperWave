@@ -24,7 +24,7 @@ const Chatbox = () => {
 
   return (
     <section className="background-image flex flex-col items-start justify-start h-screen w-full">
-      <header className="border-b border-gray-400 w-full h-[90px] p-4 bg-white">
+      <header className="border-b border-gray-400 w-full h-[83px] p-4 bg-white">
         <div className="flex items-center gap-3">
           <span>
             <img
