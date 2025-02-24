@@ -8,8 +8,17 @@ import {
   RiArrowDownFill 
 } from "react-icons/ri";
 import logo from "../../public/assets/logo.png";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase/firebase";
 
 const NavLink = () => {
+  const handleLogout = async () =>{
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.log(err)
+    }
+  }
   return (
     <section className="sticky top-0 h-[7vh] lg:h-[100vh] w-full lg:w-[9.5rem] bg-[#01AA85] flex lg:flex-col py-8 lg:py-0">
       <div className="flex lg:flex-col items-center lg:items-start justify-between lg:gap-10 w-full px-2 lg:px-0">
@@ -37,7 +46,7 @@ const NavLink = () => {
             </button>
           </li>
           <li>
-            <button aria-label="Notifications" className="text-[1.38rem] lg:text-[1.75rem] cursor-pointer">
+            <button  aria-label="Notifications" className="text-[1.38rem] lg:text-[1.75rem] cursor-pointer">
               <RiNotificationLine color="#fff" />
             </button>
           </li>
@@ -52,7 +61,7 @@ const NavLink = () => {
             </button>
           </li>
           <li>
-            <button aria-label="Shutdown" className="text-[1.38rem] lg:text-[1.75rem] cursor-pointer">
+            <button onClick={handleLogout} aria-label="Shutdown" className="text-[1.38rem] lg:text-[1.75rem] cursor-pointer">
               <RiShutDownLine color="#fff" />
             </button>
           </li>
