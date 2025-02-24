@@ -18,18 +18,18 @@ const Register = ({ isLogin , setIsLogin }) => {
       
    }
     
-   const handleAuth = async () => {
+   const handleRegAuth = async () => {
       try {
          const userCredential = await createUserWithEmailAndPassword(auth, userData?.email, userData?.password);
-         const user = userCredential.user;
-         console.log(user);
+         const newUser = userCredential.user;
+         console.log(newUser);
          
-         const userDocRef = doc(db, "user", user.uid);
+         const userDocRef = doc(db, "user", newUser.uid);
       
          await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email,
-            username: user.email?.split("@")[0],
+            uid: newUser.uid,
+            email: newUser.email,
+            username: newUser.email?.split("@")[0],
             fullName: userData.fullName,
             image: "",
          });
@@ -58,7 +58,7 @@ const Register = ({ isLogin , setIsLogin }) => {
            </div>
 
            <div className="w-full">
-              <button onClick={handleAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
+              <button onClick={handleRegAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
                 Register <FaUserPlus/>
                 </button>
            </div>
