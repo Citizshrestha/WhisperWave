@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { FaSignInAlt } from 'react-icons/fa'
 
-const Login = () => {
+const Login = ({ isLogin, setIsLogin}) => {
   const [userData, setUserData] = useState({email:"", password: ""});
   const handleChangeUserData = (e) => {
     e.preventDefault();
@@ -42,7 +42,7 @@ const Login = () => {
         </div>
 
         <div className="mt-5 text-center text-gray-400 text-sm ">
-           <button> Not have an account? Sign Up</button>
+           <button onClick={() => setIsLogin(!isLogin)}> Not have an account? Sign Up</button>
         </div>
 
     </div>
