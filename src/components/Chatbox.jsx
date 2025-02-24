@@ -7,7 +7,8 @@ import { useEffect, useState, useMemo } from "react";
 
 const Chatbox = () => {
   const [messages, setMessages] = useState([]);
-
+  const [messageText,setMessageText] = useState("");
+ 
   const senderEmail = "baxo@mailinator.com";
 
   useEffect(() => {
@@ -18,9 +19,26 @@ const Chatbox = () => {
     return [...messages].sort((a, b) => {
       const aTimeStamp = a.timestamp.seconds + a.timestamp.nanoseconds / 1e9;
       const bTimeStamp = b.timestamp.seconds + b.timestamp.nanoseconds / 1e9;
-      return  aTimeStamp - bTimeStamp; 
+      return  aTimeStamp - bTimeStamp; //sort messages by latest timestamp or message
     });
   }, [messages]);
+
+  const handleSendMessage = (e) => {
+    //Send message logic 
+    e.preventDefault();   //prevents page reload on form submission
+    if(!messageText.trim()) return; //prevents sending empty message
+    const newMessage = {
+      sender: senderEmail,
+      text: messageText.trim(),
+      timestamp: {
+        seconds: Math.floor(Date.now() / 1000),
+        nanoseconds: 0,
+
+      },
+    };
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+      setMessageText("");
+  };
 
   return (
     <section className="background-image flex flex-col items-start justify-start h-screen w-full">
@@ -92,16 +110,21 @@ const Chatbox = () => {
           <form
             action=""
             className="flex items-center bg-white h-[45px] w-full px-2 rounded-lg relative shadow-lg"
-            onSubmit={(e) => e.preventDefault()} 
+            onSubmit={handleSendMessage}
           >
             <input
               className="h-full text-[#2A3D39] outline-none text-[1rem] pl-3 pr-[3.2rem] rounded-lg w-full"
               type="text"
               name="message"
               id="message"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+
               placeholder="Write your message..."
             />
-            <button className="flex items-center justify-center absolute right-3 p-2 rounded-full bg-[#D9F2ED] hover:bg-[#C8EAE3]">
+            <button 
+              type="submit"
+              className="flex items-center justify-center absolute right-3 p-2 rounded-full bg-[#D9F2ED] hover:bg-[#C8EAE3]">
               <RiSendPlaneFill color="#01AA85" />
             </button>
           </form>

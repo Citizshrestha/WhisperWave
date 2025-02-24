@@ -1,4 +1,3 @@
-// import React from 'react'
 import Navlink from "./components/Navlink";
 import SearchModal from "./components/SearchModal";
 import ChatList from "./components/ChatList";
