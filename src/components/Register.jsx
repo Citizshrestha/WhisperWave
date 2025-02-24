@@ -1,13 +1,15 @@
 // import React from 'react'
 import { useState } from 'react'
 import { FaUserPlus } from 'react-icons/fa'
+import {createUserWithEmailAndPassword} from "firebase/auth";
+import { auth, db } from "../firebase/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 
-const Register = () => {
+const Register = ({ isLogin , setIsLogin }) => {
    const [userData, setUserData] = useState({fullName: "", email: "", password: ""});
 
    const handleChangeUserData = (e) => {
-      e.preventDefault();
       const {name,value} = e.target;
       setUserData((prevState) => ({
          ...prevState,
@@ -18,10 +20,25 @@ const Register = () => {
     
    const handleAuth = async () => {
       try {
+         const userCredential = await createUserWithEmailAndPassword(auth, userData?.email, userData?.password);
+         const user = userCredential.user;
+         console.log(user);
+         
+         const userDocRef = doc(db, "user", user.uid);
+      
+         await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            username: user.email?.split("@")[0],
+            fullName: userData.fullName,
+            image: "",
+         });
          alert("Registration Successful");
       } catch (error) {
-        alert("Registration Failed! Some error occured"+ error); 
+         console.error("Firebase error:", error.message); 
+         alert("Registration Failed! Error: " + error.message); 
       }
+      
    }
    console.log(userData.email)
    console.log(userData.password)
@@ -47,7 +64,7 @@ const Register = () => {
            </div>
 
            <div className="mt-5 text-center text-gray-400 text-sm ">
-              <button>Already have an account? Sign In</button>
+              <button onClick={() => setIsLogin(!isLogin)}>Already have an account? Sign In</button>
            </div>
 
        </div>
