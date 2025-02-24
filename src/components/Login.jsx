@@ -1,6 +1,9 @@
 // import React from 'react'
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useState } from 'react'
 import { FaSignInAlt } from 'react-icons/fa'
+import { auth, db } from "../firebase/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 const Login = ({ isLogin, setIsLogin}) => {
   const [userData, setUserData] = useState({email:"", password: ""});
@@ -14,9 +17,24 @@ const Login = ({ isLogin, setIsLogin}) => {
   }
 
 
-  const handleAuth = async () => {
+  const handleLoginAuth = async () => {
     try {
+      const userCredential = await signInWithEmailAndPassword(auth, userData.email, userData.password);
+      const loggedInuser = userCredential.user;
+      console.log(loggedInuser);
+
+      const userDocRef = doc(db, "users", loggedInuser.uid);
+
+      await setDoc(userDocRef, {
+        uid: loggedInuser.uid,
+        email: loggedInuser.email,
+        username: loggedInuser.email?.split("@")[0],
+        fullName: loggedInuser.displayName,
+        image: "",
+      });
       alert("Login Successful");
+
+
     } catch (error) {
       alert("Login Failed! Some error occured"+ error);
     }
@@ -36,7 +54,7 @@ const Login = ({ isLogin, setIsLogin}) => {
         </div>
 
         <div className="w-full">
-           <button onClick={handleAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
+           <button onClick={handleLoginAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
              Login <FaSignInAlt/>
              </button>
         </div>
