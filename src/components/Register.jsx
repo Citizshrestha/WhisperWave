@@ -24,7 +24,7 @@ const Register = ({ isLogin , setIsLogin }) => {
          const newUser = userCredential.user;
          console.log(newUser);
          
-         const userDocRef = doc(db, "user", newUser.uid);
+         const userDocRef = doc(db, "users", newUser.uid);
       
          await setDoc(userDocRef, {
             uid: newUser.uid,
