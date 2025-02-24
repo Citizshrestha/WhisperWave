@@ -25,7 +25,7 @@ const NavLink = () => {
         </div>
 
         {/* Navigation List */}
-        <ul className="flex lg:flex-col items-center gap-7 md:gap-10 px-2 md:px-0">
+        <ul className="flex lg:flex-col items-center ml-7 gap-7 md:gap-10 px-2 md:px-0">
           <li>
             <button aria-label="Chat AI" className="text-[1.38rem] lg:text-[1.75rem] cursor-pointer">
               <RiChatAiLine color="#fff" />
