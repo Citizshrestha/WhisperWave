@@ -1,5 +1,4 @@
 import Navlink from "./components/Navlink";
-import SearchModal from "./components/SearchModal";
 import ChatList from "./components/ChatList";
 import Chatbox from "./components/Chatbox";
 import Login from "./components/Login";
