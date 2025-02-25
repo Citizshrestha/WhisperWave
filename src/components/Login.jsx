@@ -1,25 +1,27 @@
 // import React from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useState } from 'react'
-import { FaSignInAlt } from 'react-icons/fa'
+import { FaSignInAlt, FaSpinner } from 'react-icons/fa'
 import { auth, db } from "../firebase/firebase";
 import { doc, setDoc } from "firebase/firestore";
 
 const Login = ({ isLogin, setIsLogin}) => {
   const [userData, setUserData] = useState({email:"", password: ""});
+  const [isLoading,setIsLoading] = useState(false);
   const handleChangeUserData = (e) => {
-    e.preventDefault();
+   
     const {name,value} =e.target;
     setUserData((prevData) => ({
       ...prevData,
       [name]: value
-    }))
+    }));
   }
 
 
   const handleLoginAuth = async () => {
+    setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, userData.email, userData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, userData?.email, userData?.password);
       const loggedInuser = userCredential.user;
       console.log(loggedInuser);
 
@@ -37,6 +39,8 @@ const Login = ({ isLogin, setIsLogin}) => {
 
     } catch (error) {
       alert("Login Failed! Some error occured"+ error);
+    } finally{
+      setIsLoading(false);
     }
   }
 
@@ -54,13 +58,21 @@ const Login = ({ isLogin, setIsLogin}) => {
         </div>
 
         <div className="w-full">
-           <button onClick={handleLoginAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
-             Login <FaSignInAlt/>
+           <button disabled={isLoading} onClick={handleLoginAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
+               {isLoading ? (
+                 <>Processing... <FaSpinner className='spinner '/> </>
+               ) : (
+                <>
+                  Login <FaSignInAlt/>
+                </>
+               )
+
+               } 
              </button>
         </div>
 
         <div className="mt-5 text-center text-gray-400 text-sm ">
-           <button onClick={() => setIsLogin(!isLogin)}> Not have an account? Sign Up</button>
+           <button onClick={() => setIsLogin(!isLogin)}> Not have an account? Register</button>
         </div>
 
     </div>
