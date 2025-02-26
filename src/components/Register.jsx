@@ -47,7 +47,7 @@ const Register = ({ isLogin , setIsLogin }) => {
   return (
    <section className='flex flex-col items-center justify-center h-[100vh] background-image'>
        <div className='p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center'>
-           <div className='mb-10'>
+           <div className='mb-12'>
               <h1 className='text-center text-[1.8rem] font-bold  '>Sign Up</h1>
               <p className='text-sm text-center text-gray-400 '>Welcome, create an account to continue</p>
            </div>
