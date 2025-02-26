@@ -2,14 +2,18 @@ import { useState, useEffect, useMemo } from "react";
 import { RiMore2Fill } from "react-icons/ri";
 import defaultAvatar from "../../public/assets/default.jpg"; 
 import SearchModal from "./SearchModal"; 
-import chatData from "../data/chatData"; 
+// import chatData from "../data/chatData"; 
 import { formatTimeStamp } from "../utils/formatTimeStamp";
+import { listenForChats } from "../firebase/firebase";
 
 const ChatList = () => {
   const [chats, setChats] = useState([]);
 
   useEffect(() => {
-    setChats(chatData || []); // Fallback to empty array if chatData is undefined
+    const unsubscribe = listenForChats(setChats);
+    return () => {
+      unsubscribe();
+    }
   }, []);
   
   const sortedChats = useMemo(() => {
