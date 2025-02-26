@@ -23,7 +23,6 @@ const Login = ({ isLogin, setIsLogin,  }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, userData?.email, userData?.password);
       const loggedInuser = userCredential.user;
-      console.log(loggedInuser);
 
       const userDocRef = doc(db, "users", loggedInuser.uid);
 

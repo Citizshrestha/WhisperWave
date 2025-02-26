@@ -22,7 +22,6 @@ const Register = ({ isLogin , setIsLogin }) => {
       try {
          const userCredential = await createUserWithEmailAndPassword(auth, userData?.email, userData?.password);
          const newUser = userCredential.user;
-         console.log(newUser);
          
          const userDocRef = doc(db, "users", newUser.uid);
       
@@ -35,7 +34,6 @@ const Register = ({ isLogin , setIsLogin }) => {
          });
          alert("Registration Successful");
       } catch (error) {
-         console.error("Firebase error:", error.message); 
          alert("Registration Failed! Error: " + error.message); 
       }
       
