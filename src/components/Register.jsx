@@ -1,6 +1,6 @@
 // import React from 'react'
 import { useState } from 'react'
-import { FaUserPlus } from 'react-icons/fa'
+import { FaSpinner, FaUserPlus } from 'react-icons/fa'
 import {createUserWithEmailAndPassword} from "firebase/auth";
 import { auth, db } from "../firebase/firebase";
 import { doc, setDoc } from "firebase/firestore";
@@ -8,6 +8,7 @@ import { doc, setDoc } from "firebase/firestore";
 
 const Register = ({ isLogin , setIsLogin }) => {
    const [userData, setUserData] = useState({fullName: "", email: "", password: ""});
+   const [isLoading, setIsLoading] = useState(false);
 
    const handleChangeUserData = (e) => {
       const {name,value} = e.target;
@@ -19,6 +20,7 @@ const Register = ({ isLogin , setIsLogin }) => {
    }
     
    const handleRegAuth = async () => {
+      setIsLoading(!isLoading);
       try {
          const userCredential = await createUserWithEmailAndPassword(auth, userData?.email, userData?.password);
          const newUser = userCredential.user;
@@ -35,11 +37,12 @@ const Register = ({ isLogin , setIsLogin }) => {
          alert("Registration Successful");
       } catch (error) {
          alert("Registration Failed! Error: " + error.message); 
+      } finally{
+         setIsLoading(!isLoading)
       }
       
    }
-   console.log(userData.email)
-   console.log(userData.password)
+   
    
   return (
    <section className='flex flex-col items-center justify-center h-[100vh] background-image'>
@@ -56,8 +59,14 @@ const Register = ({ isLogin , setIsLogin }) => {
            </div>
 
            <div className="w-full">
-              <button onClick={handleRegAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
-                Register <FaUserPlus/>
+              <button disabled={isLoading} onClick={handleRegAuth} className='bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center'>
+                 {isLoading ? (
+                  <>Processing... <FaSpinner className='spinner'/></>
+                 ) : (
+                  <>
+                  Register <FaUserPlus/>
+                  </>
+                 )}
                 </button>
            </div>
 
