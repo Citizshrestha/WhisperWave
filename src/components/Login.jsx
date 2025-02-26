@@ -19,7 +19,7 @@ const Login = ({ isLogin, setIsLogin,  }) => {
 
 
   const handleLoginAuth = async () => {
-    setIsLoading(true);
+    setIsLoading(!isLoading);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, userData?.email, userData?.password);
       const loggedInuser = userCredential.user;
@@ -39,7 +39,7 @@ const Login = ({ isLogin, setIsLogin,  }) => {
     } catch (error) {
       alert("Login Failed! Some error occured"+ error);
     } finally{
-      setIsLoading(false);
+      setIsLoading(!isLoading);
     }
   }
 
