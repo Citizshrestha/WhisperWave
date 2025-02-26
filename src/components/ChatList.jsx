@@ -25,6 +25,10 @@ const ChatList = () => {
       })
   },[chats]);
 
+  const startChat= () => {
+    alert("Chats Started");
+  }
+
   return (
     <section className="relative hidden lg:flex flex-col items-start justify-start bg-white h-screen w-full md:w-[37.5rem]">
       <header className="flex items-center justify-between w-[100%] lg:border-b border-b-1 border-[#898989b9] p-4 sticky md:static top-0 z-[100]">
@@ -51,7 +55,7 @@ const ChatList = () => {
       <div className="w-[100%] mt-[10px] px-5">
         <header className="flex items-center justify-between w-full">
           <h3 className="text-[1rem]">Messages ({chats?.length || 0})</h3>
-          <SearchModal />
+          <SearchModal startChat={startChat}/>
         </header>
       </div>
 
