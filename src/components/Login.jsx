@@ -5,7 +5,7 @@ import { FaSignInAlt, FaSpinner } from 'react-icons/fa'
 import { auth, db } from "../firebase/firebase";
 import { doc, setDoc } from "firebase/firestore";
 
-const Login = ({ isLogin, setIsLogin}) => {
+const Login = ({ isLogin, setIsLogin,  }) => {
   const [userData, setUserData] = useState({email:"", password: ""});
   const [isLoading,setIsLoading] = useState(false);
   const handleChangeUserData = (e) => {
@@ -31,7 +31,7 @@ const Login = ({ isLogin, setIsLogin}) => {
         uid: loggedInuser.uid,
         email: loggedInuser.email,
         username: loggedInuser.email?.split("@")[0],
-        fullName: loggedInuser.displayName,
+        fullName: loggedInuser.email?.split("@")[0].toUpperCase().charAt(0) + loggedInuser.email?.split("@")[0].slice(1),
         image: "",
       });
       alert("Login Successful");
