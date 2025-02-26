@@ -73,14 +73,14 @@ const SearchModal = ({ startChat }) => {
                                 </div>
                                 <div className="mt-6">
                                     {users?.map((user) => (
-                                            
-                                            <div  
+                                        <div  
+                                            key={user.username}
                                             className="flex items-start gap-3 bg-[#15eabc34] p-3 mb-5 rounded-lg cursor-pointer border border-[#ffffff20] shadow-lg"
-                                             onClick={() => { console.log(user);
+                                            onClick={() => { 
                                                 startChat(user);
                                                 closeModal();
                                             }}
-                                            >
+                                        >
                                             <img src={user.image || defaultAvatar} className="h-[40px] w-[40px] rounded-full" alt="" />
                                             <span>
                                                 <h2 className="p-0 font-semibold text-white text-[18px]">{user.fullName}</h2>
