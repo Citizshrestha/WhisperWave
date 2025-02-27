@@ -6,7 +6,7 @@ import SearchModal from "./SearchModal";
 import { formatTimeStamp } from "../utils/formatTimeStamp";
 import { listenForChats } from "../firebase/firebase";
 
-const ChatList = () => {
+const ChatList = ({ setSelectedUser }) => {
   const [chats, setChats] = useState([]);
 
   useEffect(() => {
@@ -25,8 +25,8 @@ const ChatList = () => {
       })
   },[chats]);
 
-  const startChat= () => {
-    alert("Chats Started");
+  const startChat = (user) => {
+    setSelectedUser(user)
   }
 
   return (
