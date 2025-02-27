@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot,doc,setDoc,getDoc, serverTimestamp, updateDoc, addDoc, Timestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -33,6 +33,40 @@ export const listenForChats = (setChats) => {
   });
 
   return unsubscribe;
+};
+
+export const sendMessage =  async (messageText , chatId , user1, user2) => {
+  const chatRef =  doc(db, "chats", chatId);
+
+  const user1Doc = await getDoc(doc(db, "users", user1));
+  const user2Doc = await getDoc(doc(db, "users", user2));
+
+  console.log(user1Doc)
+  console.log(user2Doc)
+
+  const user1Data = user1Doc.data();
+  const  user2Data = user2Doc.data();
+
+  const chatDoc = await getDoc(chatRef);
+  if (!chatDoc.exists()){
+    await setDoc(chatRef, {
+      users: [user1Data, user2Data],
+      lastMessage: messageText,
+      lastMessageTimestamp: serverTimestamp(),
+    });
+  } else {
+    await updateDoc(chatRef, {
+      lastMessage: messageText,
+      lastMessageTimestamp: serverTimestamp(),
+    });
+  }
+    const messageRef = collection(db, "chats", chatId, "messages");
+
+    await addDoc(messageRef,{
+      text: messageText,
+      sender: auth.currentUser.email,
+      timestamp: serverTimestamp(),
+    });
 };
 
 export { auth, db };

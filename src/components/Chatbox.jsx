@@ -3,17 +3,34 @@ import { formatTimeStamp } from "../utils/formatTimeStamp";
 import defaultAvatar from "../../public/assets/default.jpg";
 import { RiSendPlaneFill } from "react-icons/ri";
 import { messageData } from "../data/messageData";
-import { useEffect, useState, useMemo } from "react"; 
+import { useEffect, useState, useMemo, useRef } from "react"; 
+import { auth, sendMessage } from "../firebase/firebase";
 
-const Chatbox = () => {
+const Chatbox = ({ selectedUser }) => {
   const [messages, setMessages] = useState([]);
   const [messageText,setMessageText] = useState("");
  
-  const senderEmail = "baxo@mailinator.com";
+  const scrollRef = useRef(null)
+
+  
+  const chatId = auth?.currentUser?.uid < selectedUser?.uid ? `${auth?.currentUser?.uid} - ${selectedUser?.uid}` : `${selectedUser?.uid} - ${auth?.currentUser?.uid}`
+  const user1 = auth?.currentUser;
+  const user2 = selectedUser;
+  const senderEmail = auth?.currentUser?.email;
+
+  console.log(typeof chatId);
+  console.log(user1);
+  console.log(user2);
 
   useEffect(() => {
     setMessages(messageData || []); // Fallback to empty array if messageData is undefined
   }, []);
+
+  useEffect(() => {
+    if (scrollRef.current){
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  },[messages])
 
   const sortedMessages = useMemo(() => {
     return [...messages].sort((a, b) => {
@@ -36,6 +53,8 @@ const Chatbox = () => {
 
       },
     };
+
+      sendMessage(messageText, chatId, user1, user2);
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       setMessageText("");
   };
@@ -46,16 +65,16 @@ const Chatbox = () => {
         <div className="flex items-center gap-3">
           <span>
             <img
-              src={defaultAvatar}
+              src={selectedUser?.image || defaultAvatar}
               className="w-11 h-11 object-cover rounded-full" 
               alt="Avatar"
             />
           </span>
           <span>
             <h3 className="font-semibold text-[#2A3D39] text-lg">
-              Chatfrik User
+             {selectedUser?.fullName || "Chatfrik User"}
             </h3>
-            <p className="font-light text-[#2A3D39] text-sm">@chatfrik</p>
+            <p className="font-light text-[#2A3D39] text-sm">@{selectedUser?.username || "chatfrik"}</p>
           </span>
         </div>
       </header>
