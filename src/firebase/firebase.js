@@ -12,12 +12,10 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Optional: Add validation to ensure all variables are present
 const requiredEnvVars = [
   "REACT_APP_FIREBASE_API_KEY",
   "REACT_APP_FIREBASE_AUTH_DOMAIN",
