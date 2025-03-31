@@ -70,12 +70,12 @@ const Login = ({ isLogin, setIsLogin,  }) => {
              </button>
         </div>
 
-        <div className="mt-5 text-center text-gray-400 text-sm ">
+        <div className="mt-5 text-sm text-center text-gray-400 ">
            <button onClick={() => setIsLogin(!isLogin)}> Not have an account? Register</button>
         </div>
 
     </div>
-</section>
+    </section>
   )
 }
 

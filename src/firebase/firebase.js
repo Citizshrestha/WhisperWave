@@ -12,10 +12,7 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
+// Check for missing environment variables
 const requiredEnvVars = [
   "REACT_APP_FIREBASE_API_KEY",
   "REACT_APP_FIREBASE_AUTH_DOMAIN",
@@ -29,32 +26,37 @@ if (missingVars.length > 0) {
   throw new Error(`Missing required environment variables: ${missingVars.join(", ")}`);
 }
 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Listen for chats (filtered by authenticated user)
 export const listenForChats = (setChats) => {
+  if (!auth.currentUser) return () => {}; // Return empty cleanup if not authenticated
   const chatsRef = collection(db, "chats");
   const unsubscribe = onSnapshot(chatsRef, (snapshot) => {
     const chatList = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-
     const filteredChats = chatList.filter((chat) =>
       chat?.users?.some((user) => user.email === auth.currentUser.email)
     );
-
     setChats(filteredChats);
   });
-
   return unsubscribe;
 };
 
+// Send a message
 export const sendMessage = async (messageText, chatId, user1, user2) => {
+  if (!auth.currentUser) throw new Error("User not authenticated");
   const chatRef = doc(db, "chats", chatId);
 
-  const user1Doc = await getDoc(doc(db, "users", user1));
-  const user2Doc = await getDoc(doc(db, "users", user2));
-
-  console.log(user1Doc);
-  console.log(user2Doc);
+  const [user1Doc, user2Doc] = await Promise.all([
+    getDoc(doc(db, "users", user1)),
+    getDoc(doc(db, "users", user2)),
+  ]);
 
   const user1Data = user1Doc.data();
   const user2Data = user2Doc.data();
@@ -74,7 +76,6 @@ export const sendMessage = async (messageText, chatId, user1, user2) => {
   }
 
   const messageRef = collection(db, "chats", chatId, "messages");
-
   await addDoc(messageRef, {
     text: messageText,
     sender: auth.currentUser.email,
@@ -82,12 +83,14 @@ export const sendMessage = async (messageText, chatId, user1, user2) => {
   });
 };
 
+// Listen for messages in a chat
 export const listenForMessages = (chatId, setMessages) => {
   const chatRef = collection(db, "chats", chatId, "messages");
-  onSnapshot(chatRef, (snapshot) => {
+  const unsubscribe = onSnapshot(chatRef, (snapshot) => {
     const messages = snapshot.docs.map((doc) => doc.data());
     setMessages(messages);
   });
+  return unsubscribe;
 };
 
 export { auth, db };
