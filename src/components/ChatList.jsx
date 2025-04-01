@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { RiMore2Fill } from "react-icons/ri";
-import defaultAvatar from "../../public/assets/default.jpg"; 
-import SearchModal from "./SearchModal"; 
-// import chatData from "../data/chatData"; 
+import SearchModal from "./SearchModal";
 import { formatTimeStamp } from "../utils/formatTimeStamp";
 import { listenForChats } from "../firebase/firebase";
+
+const defaultAvatar = "/assets/default.jpg"; // Use public folder path
 
 const ChatList = ({ setSelectedUser }) => {
   const [chats, setChats] = useState([]);
@@ -13,21 +13,20 @@ const ChatList = ({ setSelectedUser }) => {
     const unsubscribe = listenForChats(setChats);
     return () => {
       unsubscribe();
-    }
+    };
   }, []);
-  
+
   const sortedChats = useMemo(() => {
-      return [...chats].sort((a,b) => {
-        const aTimeStamp = a.lastMessageTimestamp.seconds + a.lastMessageTimestamp.nanoseconds / 1e9;
-        const bTimeStamp =  b.lastMessageTimestamp.seconds + b.lastMessageTimestamp.nanoseconds / 1e9;
-       
-        return bTimeStamp - aTimeStamp;
-      })
-  },[chats]);
+    return [...chats].sort((a, b) => {
+      const aTimeStamp = a?.lastMessageTimestamp?.seconds + a?.lastMessageTimestamp?.nanoseconds / 1e9;
+      const bTimeStamp = b?.lastMessageTimestamp?.seconds + b?.lastMessageTimestamp?.nanoseconds / 1e9;
+      return bTimeStamp - aTimeStamp;
+    });
+  }, [chats]);
 
   const startChat = (user) => {
-    setSelectedUser(user)
-  }
+    setSelectedUser(user);
+  };
 
   return (
     <section className="relative hidden lg:flex flex-col items-start justify-start bg-white h-screen w-full md:w-[37.5rem]">
@@ -40,10 +39,10 @@ const ChatList = ({ setSelectedUser }) => {
           />
           <span>
             <h3 className="p-0 font-semibold text-[#2A3D39] md:text-[1.1rem]">
-              {"Chatfrik User"}
+              Chatfrik User
             </h3>
             <p className="p-0 font-light text-[#2A3D39] text-[1rem]">
-              {"@chatfrik"}
+              @chatfrik
             </p>
           </span>
         </main>
@@ -55,20 +54,21 @@ const ChatList = ({ setSelectedUser }) => {
       <div className="w-[100%] mt-[10px] px-5">
         <header className="flex items-center justify-between w-full">
           <h3 className="text-[1rem]">Messages ({chats?.length || 0})</h3>
-          <SearchModal startChat={startChat}/>
+          <SearchModal startChat={startChat} />
         </header>
       </div>
 
       <main className="flex flex-col items-start mt-[.5rem] pb-3 w-full">
         {sortedChats?.length > 0 ? (
           sortedChats.map((chat) => {
-            const otherUser = chat.users?.find(
-              (user) => user.email !== "baxo@mailinator.com"
-            ) || { fullName: "Unknown User", image: {defaultAvatar} };
+            const otherUser =
+              chat?.users?.find((user) => user.email !== "baxo@mailinator.com") ||
+              { fullName: "Unknown User", image: defaultAvatar };
 
             return (
               <button
                 key={chat.id}
+                onClick={() => startChat(otherUser)}
                 className="flex items-start justify-between w-full border-b border-[#756c6c58] px-5 pb-3 pt-3"
               >
                 <div className="flex items-start gap-3">

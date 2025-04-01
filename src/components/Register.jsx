@@ -70,7 +70,7 @@ const Register = ({ isLogin , setIsLogin }) => {
                 </button>
            </div>
 
-           <div className="mt-5 text-center text-gray-400 text-sm ">
+           <div className="mt-5 text-sm text-center text-gray-400 ">
               <button onClick={() => setIsLogin(!isLogin)}>Already have an account? LogIn</button>
            </div>
 
