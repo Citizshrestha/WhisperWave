@@ -49,9 +49,9 @@ const SearchModal = ({ startChat }) => {
             </button>
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex justify-center items-center bg-[#00170cb7]" onClick={closeModal}>
-                    <div className="relative p-4 w-full max-w-md max-h-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative w-full max-w-md max-h-full p-4" onClick={(e) => e.stopPropagation()}>
                         <div className="relative bg-[#01AA85] w-[100%] rounded-md shadow-lg">
-                            <div className="flex items-center justify-between p-4 md:p-5 border-b border-gray-300">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-300 md:p-5">
                                 <h3 className="text-xl font-semibold text-white">Search Chat</h3>
                                 <button onClick={closeModal} className="text-white bg-transparent hover:bg-[#d9f2ed] hover:text-[#01AA85] rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center">
                                     <FaXmark size={20} />
@@ -66,7 +66,7 @@ const SearchModal = ({ startChat }) => {
                                             className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg outline-none w-full p-2.5" 
                                             placeholder="Search users" 
                                         />
-                                        <button onClick={handleSearch} className="bg-green-900 text-white px-3 py-2 rounded-lg">
+                                        <button onClick={handleSearch} className="px-3 py-2 text-white bg-green-900 rounded-lg">
                                             <FaSearch />
                                         </button>
                                     </div>
