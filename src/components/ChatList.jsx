@@ -3,13 +3,15 @@ import defaultAvatar from "../../public/assets/default.jpg";
 import PropTypes from "prop-types";
 import { RiMore2Fill } from "react-icons/ri";
 import SearchModal from "./SearchModal";
-import { formatTimestamp } from "../utils/formatTimeStamp";
+import { formatTimestamp } from "../utils/formatTimestamp";
 import { auth, db, listenForChats } from "../firebase/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
 const Chatlist = ({ setSelectedUser }) => {
     const [chats, setChats] = useState([]);
     const [user, setUser] = useState(null);
+
+    
 
     useEffect(() => {
         const userDocRef = doc(db, "users", auth?.currentUser?.uid);

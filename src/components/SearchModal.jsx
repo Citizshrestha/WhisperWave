@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { FaXmark } from "react-icons/fa6";
 import { RiSearchLine } from "react-icons/ri";
@@ -11,36 +11,40 @@ const SearchModal = ({ startChat }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [users, setUsers] = useState([]);
 
-    const openModal = () => setIsModalOpen(!isModalOpen);
-    const closeModal = () => setIsModalOpen(!isModalOpen);
+    const openModal = () => setIsModalOpen(true);
+    const closeModal = () => setIsModalOpen(false);
 
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
-            alert("Please enter username you want to search");
+            alert("Please enter a search term");
             return;
         }
 
         try {
             const normalizedSearchTerm = searchTerm.toLowerCase();
-            const q = query(
-                collection(db, "users"),
-                where("username", ">=", normalizedSearchTerm),
-                where("username", "<=", normalizedSearchTerm + "\uf8ff")
-            );
+            const q = query(collection(db, "users"), 
+            where("username", ">=", normalizedSearchTerm), 
+            where("username", "<=", normalizedSearchTerm + "\uf8ff"));
+
             const querySnapshot = await getDocs(q);
 
             const foundUsers = [];
+
             querySnapshot.forEach((doc) => {
                 foundUsers.push(doc.data());
             });
+
+            setUsers(foundUsers);
+
             if (foundUsers.length === 0) {
                 alert("No users found");
             }
-            setUsers(foundUsers);
         } catch (error) {
             console.log(error);
         }
     };
+
+    console.log(users);
 
     return (
         <div>
@@ -60,12 +64,7 @@ const SearchModal = ({ startChat }) => {
                             <div className="p-4 md:p-5">
                                 <div className="space-y-4">
                                     <div className="flex gap-2">
-                                        <input 
-                                            onChange={(e) => setSearchTerm(e.target.value)} 
-                                            type="text" 
-                                            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg outline-none w-full p-2.5" 
-                                            placeholder="Search users" 
-                                        />
+                                        <input onChange={(e) => setSearchTerm(e.target.value)} type="text" className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg outline-none w-full p-2.5" placeholder="Search users" />
                                         <button onClick={handleSearch} className="px-3 py-2 text-white bg-green-900 rounded-lg">
                                             <FaSearch />
                                         </button>
@@ -73,18 +72,18 @@ const SearchModal = ({ startChat }) => {
                                 </div>
                                 <div className="mt-6">
                                     {users?.map((user) => (
-                                        <div  
-                                            key={user.username}
-                                            className="flex items-start gap-3 bg-[#15eabc34] p-3 mb-5 rounded-lg cursor-pointer border border-[#ffffff20] shadow-lg"
-                                            onClick={() => { 
+                                        <div
+                                            onClick={() => {
+                                                console.log(user);
                                                 startChat(user);
                                                 closeModal();
                                             }}
+                                            className="flex items-start gap-3 bg-[#15eabc34] p-2 mb-3 rounded-lg cursor-pointer border border-[#ffffff20] shadow-lg "
                                         >
-                                            <img src={user.image || defaultAvatar} className="h-[40px] w-[40px] rounded-full" alt="" />
+                                            <img src={user?.image || defaultAvatar} className="h-[40px] w-[40px] rounded-full" alt="" />
                                             <span>
-                                                <h2 className="p-0 font-semibold text-white text-[18px]">{user.fullName}</h2>
-                                                <p className="text-[13px] text-white">@{user.username}</p>
+                                                <h2 className="p-0 font-semibold text-white text-[18px]">{user?.fullName}</h2>
+                                                <p className="text-[13px] text-white">@{user?.username}</p>
                                             </span>
                                         </div>
                                     ))}

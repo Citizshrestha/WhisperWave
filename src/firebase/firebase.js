@@ -89,46 +89,10 @@ export const sendMessage = async (messageText, chatId, user1, user2) => {
 };
 
 export const listenForMessages = (chatId, setMessages) => {
-  if (!chatId || typeof chatId !== "string") {
-    setMessages([]);
-    return () => {};
-  }
-
-  if (!auth.currentUser) {
-    setMessages([]);
-    return () => {};
-  }
-
-  const chatRef = doc(db, "chats", chatId);
-  return getDoc(chatRef).then((chatDoc) => {
-    if (!chatDoc.exists()) {
-      setMessages([]);
-      return () => {};
-    }
-    const chatData = chatDoc.data();
-    const hasAccess = chatData?.users?.some((user) => user.email === auth.currentUser.email);
-    if (!hasAccess) {
-      setMessages([]);
-      return () => {};
-    }
-
-    const messagesRef = collection(db, "chats", chatId, "messages");
-    const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
-      const messages = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+  const chatRef = collection(db, "chats", chatId, "messages");
+  onSnapshot(chatRef, (snapshot) => {
+      const messages = snapshot.docs.map((doc) => doc.data());
       setMessages(messages);
-    }, (error) => {
-      console.error(`Messages listener error for chatId ${chatId}:`, error.message);
-      setMessages([]);
-    });
-
-    return unsubscribe;
-  }).catch((error) => {
-    console.error(`Error checking parent chat ${chatId}:`, error.message);
-    setMessages([]);
-    return () => {};
   });
 };
 
