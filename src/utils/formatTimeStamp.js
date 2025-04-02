@@ -1,4 +1,4 @@
-export const formatTimeStamp = (timeStamp, showTime = false) => {
+export const formatTimestamp = (timeStamp, showTime = false) => {
    const defaultTimestamp = { seconds: 0, nanoseconds: 0 };
    const { seconds, nanoseconds } = timeStamp || defaultTimestamp;
  
