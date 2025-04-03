@@ -12,6 +12,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../firebase/firebase";
 
 const NavLink = () => {
+  
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -19,9 +20,15 @@ const NavLink = () => {
       alert("Logout error: " + err.message);
     }
   };
+
+
+  
   return (
-    <section className="sticky top-0 h-[7vh] lg:h-[100vh] w-full lg:w-[9.5rem] bg-[#01AA85] flex lg:flex-col py-8 lg:py-0">
-      <div className="flex lg:flex-col items-center lg:items-start justify-between lg:gap-10 w-full px-2 lg:px-0">
+    <section
+    style={{ background: 'linear-gradient(to bottom, #12A1C4, #011C5E)' }}
+    
+    className="sticky top-0 h-[7vh] lg:h-[100vh] w-full lg:w-[9.5rem]  flex lg:flex-col py-8 lg:py-0">
+      <div className="flex items-center justify-between w-full px-2 lg:flex-col lg:items-start lg:gap-10 lg:px-0">
         {/* Logo Section */}
         <div className="flex h-[83px] items-center justify-center lg:border-b lg:border-b-[1px] border-[#fff] w-full p-4">
           <span className="flex items-center justify-center">
@@ -34,7 +41,7 @@ const NavLink = () => {
         </div>
 
         {/* Navigation List */}
-        <ul className="flex lg:flex-col items-center ml-7 gap-7 md:gap-10 px-2 md:px-0">
+        <ul className="flex items-center px-2 lg:flex-col ml-7 gap-7 md:gap-10 md:px-0">
           <li>
             <button
               aria-label="Chat AI"
