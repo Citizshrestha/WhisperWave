@@ -3,14 +3,17 @@ import { getAuth } from "firebase/auth";
 import {
   addDoc,
   collection,
-  doc, // Ensure doc is imported
+  doc,
   getDoc,
   getDocs,
   getFirestore,
   onSnapshot,
+  query,
+  orderBy,
   serverTimestamp,
-  setDoc, // Ensure setDoc is imported
+  setDoc,
   updateDoc,
+  deleteDoc
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -31,77 +34,110 @@ export const listenForChats = (setChats) => {
     setChats([]);
     return () => {};
   }
-  const chatsRef = collection(db, "chats");
-  const unsubscribe = onSnapshot(chatsRef, (snapshot) => {
+
+  // Use a query to only fetch chats the user has access to
+  const chatsQuery = query(
+    collection(db, "chats"),
+    where("users", "array-contains", auth.currentUser.uid)
+  );
+  const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
     const chatList = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-    const filteredChats = chatList.filter((chat) =>
-      chat?.users?.some((user) => user.email === auth.currentUser.email)
-    );
-    setChats(filteredChats);
+    setChats(chatList); // No need to filter since query handles it
   }, (error) => {
     console.error("Chat listener error:", error);
+    setChats([]);
   });
   return unsubscribe;
 };
 
 export const sendMessage = async (messageText, chatId, user1, user2) => {
-  if (!user1 || !user2) {
-    throw new Error("Invalid user IDs provided");
-  }
+  if (!auth.currentUser) throw new Error("User not authenticated");
 
   const chatRef = doc(db, "chats", chatId);
-  const [user1Doc, user2Doc] = await Promise.all([
-    getDoc(doc(db, "users", user1)),
-    getDoc(doc(db, "users", user2)),
-  ]);
+  const messagesRef = collection(db, "chats", chatId, "messages");
 
-  const user1Data = user1Doc.exists() ? user1Doc.data() : null;
-  const user2Data = user2Doc.exists() ? user2Doc.data() : null;
+  try {
+    const chatDoc = await getDoc(chatRef);
+    
+    if (!chatDoc.exists()) {
+      await setDoc(chatRef, {
+        users: [user1, user2],
+        lastMessage: messageText,
+        lastMessageTimestamp: serverTimestamp(),
+        created: serverTimestamp(),
+      });
+    } else {
+      await updateDoc(chatRef, {
+        lastMessage: messageText,
+        lastMessageTimestamp: serverTimestamp(),
+      });
+    }
 
-  if (!user1Data || !user2Data) {
-    console.log("Users not found!")
-    throw new Error("One or both users not found in Firestore");
+    await addDoc(messagesRef, {
+      text: messageText,
+      senderId: auth.currentUser.uid,
+      timestamp: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Error in sendMessage:", error);
+    throw error;
+  }
+};
+
+export const listenForMessages = (chatId, callback) => {
+  if (!chatId || !auth.currentUser) {
+    console.log("Invalid chatId or no user, setting empty messages");
+    callback([]);
+    return () => {};
   }
 
-  const chatDoc = await getDoc(chatRef);
-  if (!chatDoc.exists()) {
-    await setDoc(chatRef, {
-      users: [user1Data, user2Data],
-      lastMessage: messageText,
-      lastMessageTimestamp: serverTimestamp(),
-    });
-  } else {
-    await updateDoc(chatRef, {
-      lastMessage: messageText,
-      lastMessageTimestamp: serverTimestamp(),
-    });
-  }
+  const messagesRef = collection(db, "chats", chatId, "messages");
+  const messagesQuery = query(messagesRef, orderBy("timestamp", "asc"));
 
-  const messageRef = collection(db, "chats", chatId, "messages");
-  await addDoc(messageRef, {
-    text: messageText,
-    sender: auth.currentUser.email,
-    timestamp: serverTimestamp(),
+  const unsubscribe = onSnapshot(
+    messagesQuery,
+    (snapshot) => {
+      const messages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate?.() || doc.data().timestamp,
+      }));
+      callback(messages);
+    },
+    (error) => {
+      console.error("Messages listener error:", error);
+      callback([]);
+    }
+  );
+  
+
+  return unsubscribe;
+
+  
+};
+
+export const updateMessage = async (chatId, messageId, newText) => {
+  const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
+  await updateDoc(messageRef, {
+    text: newText,
+    edited: true,
+    editedAt: new Date()
   });
 };
 
-export const listenForMessages = (chatId, setMessages) => {
-  const chatRef = collection(db, "chats", chatId, "messages");
-  onSnapshot(chatRef, (snapshot) => {
-      const messages = snapshot.docs.map((doc) => doc.data());
-      setMessages(messages);
-  });
+export const deleteMessage = async (chatId, messageId) => {
+  const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
+  await deleteDoc(messageRef);
 };
 
-// Explicitly export all necessary functions and variables
 export {
   auth,
   db,
-  doc, // Added to exports
-  setDoc, // Added to exports
+  doc,
+  setDoc,
   serverTimestamp,
   addDoc,
   collection,
