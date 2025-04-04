@@ -77,12 +77,12 @@ const Chatlist = ({ setSelectedUser }) => {
           setLoading(false);
           setError(null);
         } catch (err) {
-          setError("Failed to process chats");
+          setError("Failed to process chats",err.message);
           setLoading(false);
         }
       },
       (err) => {
-        setError("Failed to load chats");
+        setError("Failed to load chats", err.message);
         setLoading(false);
       }
     );
