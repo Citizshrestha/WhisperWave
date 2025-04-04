@@ -30,7 +30,7 @@ const NavLink = () => {
     className="sticky top-0 h-[7vh] lg:h-[100vh] w-full lg:w-[9.5rem]  flex lg:flex-col py-8 lg:py-0">
       <div className="flex items-center justify-between w-full px-2 lg:flex-col lg:items-start lg:gap-10 lg:px-0">
         {/* Logo Section */}
-        <div className="flex h-[83px] items-center justify-center lg:border-b lg:border-b-[1px] border-[#fff] w-full p-4">
+        <div className="flex h-[83px] items-center justify-center  border-[#fff] w-full p-4">
           <span className="flex items-center justify-center">
             <img
               src={logo}
