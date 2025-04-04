@@ -1,6 +1,6 @@
 <<<<<<< HEAD
 # My Local README
-This is my  Next.js app!
+This is my  Full-Stack REACT app!
 =======
 # Real-Time-Chat-Application
 
