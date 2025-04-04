@@ -13,6 +13,8 @@ const Chatlist = ({ setSelectedUser }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userCache, setUserCache] = useState({});
+ 
+  
 
   const fetchUserData = async (userId) => {
     if (userCache[userId]) return userCache[userId];
@@ -64,6 +66,7 @@ const Chatlist = ({ setSelectedUser }) => {
               
               return {
                 id: doc.id,
+                // CHANGED: Ensure lastMessage is always a string
                 lastMessage: chatData.lastMessage || "No messages yet",
                 lastMessageTimestamp: chatData.lastMessageTimestamp,
                 otherUser,
@@ -88,7 +91,7 @@ const Chatlist = ({ setSelectedUser }) => {
       unsubscribeUser();
       unsubscribeChats();
     };
-  }, []);
+  }, [auth.currentUser?.uid]);
 
   const sortedChats = useMemo(() => {
     return [...chats].sort((a, b) => {
@@ -152,7 +155,6 @@ const Chatlist = ({ setSelectedUser }) => {
           sortedChats.map((chat) => (
             <div 
               key={chat.id} 
-              // CHANGED: Removed hover:bg-gray-50 to prevent background color change on hover
               className="flex items-start justify-between w-[100%] border-b border-[#2d2a2a] px-5 py-3 transition-colors cursor-pointer"
               onClick={() => startChat(chat.otherUser)}
             >
@@ -167,7 +169,7 @@ const Chatlist = ({ setSelectedUser }) => {
                     {chat.otherUser?.fullName || "ChatFrik User"}
                   </h2>
                   <p className="font-light text-[14px] truncate">
-                    {chat.lastMessage}
+                  {chat.lastMessage}
                   </p>
                 </div>
                 {chat.lastMessageTimestamp && (

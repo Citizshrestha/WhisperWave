@@ -65,40 +65,43 @@ const Chatbox = ({ selectedUser }) => {
   };
 
   const handleEditMessage = async (messageId, newText) => {
-    if (!newText.trim() || !chatId) return;
-
+    if (!newText.trim() || !chatId) {
+      console.warn("No text or chatId provided for editing");
+      return;
+    }
+  
     try {
+      console.log("Attempting to edit message:", { chatId, messageId, newText });
       await updateMessage(chatId, messageId, newText);
+      console.log("Message edited successfully");
       setEditingMessageId(null);
       setEditedText("");
     } catch (error) {
       console.error("Error editing message:", error.message);
     }
   };
-
-  // CHANGED: Simplified handleDeleteMessage to rely on real-time updates
-  const handleDeleteMessage = async (messageId) => {
-    if (!chatId) return;
-
-    try {
-      await deleteMessage(chatId, messageId);
-      // Removed manual state update since listenForMessages handles it
-    } catch (error) {
-      console.error("Error deleting message:", error.message);
-    }
-  };
-
+  
   const startEditing = (messageId, currentText) => {
     setEditingMessageId(messageId);
     setEditedText(currentText);
   };
 
+  const handleDeleteMessage = async (messageId) => {
+    if (!chatId) return;
+
+    try {
+      await deleteMessage(chatId, messageId);
+      console.log("Message deleted successfully");
+    } catch (error) {
+      console.error("Error deleting message:", error.message);
+    }
+  };
+
+
   return (
-    // ... (JSX remains unchanged from previous version)
     <>
       {selectedUser ? (
-        <section
-         className="flex flex-col items-start justify-start h-screen w-[100%] background-image2">
+        <section className="flex flex-col items-start justify-start h-screen w-[100%] background-image2">
           <header className="w-[100%] h-[82px] m:h-fit p-4 bg-white">
             <main className="flex items-center gap-3">
               <img 
@@ -225,8 +228,8 @@ const Chatbox = ({ selectedUser }) => {
         <section className="h-screen w-[100%] bg-[#e5f6f3]">
           <div className="flex flex-col justify-center items-center h-[100vh]">
             <img src={logo} alt="Chatfrik logo" width={100} />
-            <h1 className="text-[30px] font-bold text-teal-700 mt-5">Welcome to Chatfrik</h1>
-            <p className="text-gray-500">Connect and chat with friends easily, securely, fast and free</p>
+            <h1 className="text-[30px] font-bold text-teal-700 mt-5">Welcome to Chatkick</h1>
+            <p className="text-gray-500">Connect and chat with friends easily, fast and free</p>
           </div>
         </section>
       )}

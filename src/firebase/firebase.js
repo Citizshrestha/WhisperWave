@@ -13,7 +13,9 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  where,
+  limit,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -100,6 +102,7 @@ export const listenForMessages = (chatId, callback) => {
   const unsubscribe = onSnapshot(
     messagesQuery,
     (snapshot) => {
+      // FIXED: Corrected the map function syntax by removing the invalid "10X10" and duplicate map definition
       const messages = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -112,25 +115,73 @@ export const listenForMessages = (chatId, callback) => {
       callback([]);
     }
   );
-  
 
   return unsubscribe;
-
-  
 };
 
 export const updateMessage = async (chatId, messageId, newText) => {
   const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
-  await updateDoc(messageRef, {
-    text: newText,
-    edited: true,
-    editedAt: new Date()
-  });
+  const chatRef = doc(db, "chats", chatId);
+
+  try {
+    // Step 1: Update the message document
+    await updateDoc(messageRef, {
+      text: newText,
+      edited: true,
+      editedAt: serverTimestamp(),
+    });
+
+    // Step 2: Check if this is the latest message
+    const messagesRef = collection(db, "chats", chatId, "messages"); // Use collection reference
+    const q = query(messagesRef, orderBy("timestamp", "desc"), limit(1));
+    const querySnapshot = await getDocs(q);
+    const latestMessage = querySnapshot.docs[0];
+
+    // Step 3: If the updated message is the latest, update the chat document
+    if (latestMessage && latestMessage.id === messageId) {
+      await updateDoc(chatRef, {
+        lastMessage: newText, 
+        lastMessageTimestamp: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error("Error updating message:", error);
+    throw error;
+  }
 };
 
 export const deleteMessage = async (chatId, messageId) => {
-  const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
-  await deleteDoc(messageRef);
+  try {
+    // Step 1: Delete the message from the messages subcollection
+    const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
+    await deleteDoc(messageRef);
+
+    // Step 2: Fetch the most recent remaining message (if any)
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    // Step 3: Update the lastMessage and lastMessageTimestamp in the chats document
+    const chatRef = doc(db, 'chats', chatId);
+    if (!querySnapshot.empty) {
+      // If there are remaining messages, update with the most recent one
+      const lastMessageDoc = querySnapshot.docs[0];
+      const lastMessageData = lastMessageDoc.data();
+      await updateDoc(chatRef, {
+        lastMessage: lastMessageData.text,
+        lastMessageTimestamp: lastMessageData.timestamp,
+      });
+    } else {
+      // If no messages remain, clear the lastMessage and lastMessageTimestamp
+      await updateDoc(chatRef, {
+        lastMessage: '',
+        lastMessageTimestamp: null,
+      });
+    }
+  } catch (error) {
+    console.error("Error deleting message and updating chat:", error);
+    throw error;
+  }
 };
 
 export {
