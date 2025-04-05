@@ -34,6 +34,7 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 // Enhanced uploadImage with progress tracking
+
 export const uploadImage = (file, chatId, onProgress = null) => {
   if (!auth.currentUser) throw new Error("User not authenticated");
   if (!file) throw new Error("No file provided");
@@ -66,8 +67,10 @@ export const uploadImage = (file, chatId, onProgress = null) => {
       async () => {
         try {
           const downloadURL = await getDownloadURL(storageRef);
+          console.log("Generated downloadURL:", downloadURL); // Debug: Log the URL
           resolve(downloadURL);
         } catch (error) {
+          console.error("Error getting download URL:", error);
           reject(new Error(`Failed to get download URL: ${error.message}`));
         }
       }
@@ -102,7 +105,7 @@ export const listenForChats = (setChats) => {
   );
   return unsubscribe;
 };
-
+// firebase.js
 export const sendMessage = async (messageText, chatId, user1, user2, imageUrl = "") => {
   if (!auth.currentUser) throw new Error("User not authenticated");
   if (!chatId) throw new Error("No chat ID provided");
@@ -129,6 +132,7 @@ export const sendMessage = async (messageText, chatId, user1, user2, imageUrl = 
       });
     }
 
+    console.log("Storing imageUrl in Firestore:", imageUrl); // Debug: Log the URL being stored
     await addDoc(messagesRef, {
       text: messageText || "",
       imageUrl: imageUrl || "",

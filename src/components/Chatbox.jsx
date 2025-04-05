@@ -194,7 +194,7 @@ const Chatbox = ({ selectedUser }) => {
                               </div>
                             ) : (
                               <>
-                                <div className="relative flex items-center justify-center p-6 bg-blue-100 text-blue-700 rounded-lg shadow-sm group">
+                                <div className="relative flex items-center justify-center p-6 text-blue-700 bg-blue-100 rounded-lg shadow-sm group">
                                   {msg.imageUrl ? (
                                     <img 
                                       src={msg.imageUrl} 
@@ -238,7 +238,7 @@ const Chatbox = ({ selectedUser }) => {
                             alt="Sender profile" 
                           />
                           <div>
-                            <div className="flex items-center justify-center p-6  rounded-lg shadow-sm bg-blue-100 text-blue-700">
+                            <div className="flex items-center justify-center p-6 text-blue-700 bg-blue-100 rounded-lg shadow-sm">
                               {msg.imageUrl ? (
                                 <img 
                                   src={msg.imageUrl} 
