@@ -1,13 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaSignInAlt, FaSpinner } from "react-icons/fa";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db, doc, setDoc } from "../firebase/firebase";
 import PropTypes from "prop-types";
+import { gsap } from "gsap";
 
 const Login = ({ isLogin, setIsLogin }) => {
   const [userData, setUserData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const formRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    // Ensure visibility before animating
+    gsap.set(formRef.current, { opacity: 1 });
+    gsap.fromTo(
+      formRef.current,
+      { opacity: 0, y: 50 },
+      { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+    );
+
+    gsap.fromTo(
+      formRef.current.querySelectorAll(".input-field"),
+      { opacity: 0, x: -20 },
+      { opacity: 1, x: 0, duration: 0.8, stagger: 0.2, ease: "power2.out", delay: 0.5 }
+    );
+
+    gsap.fromTo(
+      buttonRef.current,
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 0.8, ease: "elastic.out(1, 0.5)", delay: 1 }
+    );
+  }, []);
 
   const handleChangeUserData = (e) => {
     const { name, value } = e.target;
@@ -21,46 +47,81 @@ const Login = ({ isLogin, setIsLogin }) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    gsap.to(buttonRef.current, { scale: 0.95, duration: 0.3, ease: "power1.inOut" });
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, userData.email, userData.password);
       const loggedInUser = userCredential.user;
 
       const userDocRef = doc(db, "users", loggedInUser.uid);
-      await setDoc(userDocRef, {
-        uid: loggedInUser.uid,
-        email: loggedInUser.email,
-        username: loggedInUser.email.split("@")[0],
-        fullName: loggedInUser.email.split("@")[0].charAt(0).toUpperCase() + loggedInUser.email.split("@")[0].slice(1),
-        image: "",
-      }, { merge: true });
+      await setDoc(
+        userDocRef,
+        {
+          uid: loggedInUser.uid,
+          email: loggedInUser.email,
+          username: loggedInUser.email.split("@")[0],
+          fullName: loggedInUser.email.split("@")[0].charAt(0).toUpperCase() + loggedInUser.email.split("@")[0].slice(1),
+          image: "",
+        },
+        { merge: true }
+      );
 
-      alert("Login Successful");
+      gsap.to(formRef.current, {
+        opacity: 0,
+        y: -50,
+        duration: 0.8,
+        ease: "power3.in",
+        onComplete: () => alert("Login Successful"),
+      });
     } catch (error) {
       console.error("Login Error:", error.message);
-      setError(error.code === "auth/invalid-credential"
-        ? "Invalid email or password. Please try again."
-        : "Login Failed! " + error.message);
+      setError(
+        error.code === "auth/invalid-credential"
+          ? "Invalid email or password. Please try again."
+          : "Login Failed! " + error.message
+      );
+      gsap.to(formRef.current, {
+        x: -10,
+        duration: 0.1,
+        repeat: 5,
+        yoyo: true,
+        ease: "power1.inOut",
+      });
     } finally {
       setIsLoading(false);
+      gsap.to(buttonRef.current, { scale: 1, duration: 0.3, ease: "power1.out" });
+    }
+  };
+
+  const handleButtonHover = (enter) => {
+    if (!isLoading) {
+      gsap.to(buttonRef.current, {
+        scale: enter ? 1.05 : 1,
+        duration: 0.3,
+        ease: "power2.out",
+      });
     }
   };
 
   return (
-    <section className="flex flex-col items-center justify-center h-[100vh] background-image">
-      <div className="p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center">
-        <div className="mb-10">
-          <h1 className="text-center text-[1.8rem] font-bold">Login</h1>
-          <p className="text-sm text-center text-gray-400">Welcome back, Login to continue</p>
+    <section className="flex items-center justify-center min-h-screen bg-gradient-to-br  p-4">
+      <div
+        ref={formRef}
+        className="bg-white bg-opacity-95 rounded-2xl shadow-lg p-6 w-full max-w-sm flex flex-col items-center"
+      >
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-bold text-blue-900">Login to WhisperWave</h1>
+          <p className="text-sm text-gray-600 mt-1">Welcome back, sign in to continue</p>
         </div>
 
-        <form onSubmit={handleLoginAuth} className="w-full">
+        <form onSubmit={handleLoginAuth} className="w-full flex flex-col gap-4">
           <input
             name="email"
             value={userData.email}
             onChange={handleChangeUserData}
-            className="w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] mb-3 font-medium outline-none placeholder:text-[#004939858]"
+            className="input-field w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
             type="email"
-            id="email"
             placeholder="Email"
             required
           />
@@ -68,34 +129,41 @@ const Login = ({ isLogin, setIsLogin }) => {
             name="password"
             value={userData.password}
             onChange={handleChangeUserData}
-            className="w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] mb-3 font-medium outline-none placeholder:text-[#004939858]"
+            className="input-field w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
             type="password"
-            id="password"
             placeholder="Password"
             required
           />
-          {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
-          <div className="w-full">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="bg-[#01aa85] text-white font-bold w-full p-2 rounded-md flex items-center gap-2 justify-center"
-            >
-              {isLoading ? (
-                <>
-                  Processing... <FaSpinner className="animate-spin" />
-                </>
-              ) : (
-                <>
-                  Login <FaSignInAlt />
-                </>
-              )}
-            </button>
-          </div>
+          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          <button
+            ref={buttonRef}
+            type="submit"
+            disabled={isLoading}
+            className={`w-full p-3 bg-blue-600 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
+              isLoading ? "opacity-75 cursor-not-allowed" : "hover:bg-blue-700"
+            }`}
+            onMouseEnter={() => handleButtonHover(true)}
+            onMouseLeave={() => handleButtonHover(false)}
+          >
+            {isLoading ? (
+              <>
+                Processing... <FaSpinner className="animate-spin" />
+              </>
+            ) : (
+              <>
+                Login <FaSignInAlt />
+              </>
+            )}
+          </button>
         </form>
 
-        <div className="mt-5 text-sm text-center text-gray-400">
-          <button onClick={() => setIsLogin(!isLogin)}>Not have an account? Register</button>
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-sm text-blue-600 hover:text-blue-800 underline transition-colors"
+          >
+            Don’t have an account? Register
+          </button>
         </div>
       </div>
     </section>
@@ -103,7 +171,8 @@ const Login = ({ isLogin, setIsLogin }) => {
 };
 
 Login.propTypes = {
-    isLogin: PropTypes.func.isRequired,
-    setIsLogin: PropTypes.func.isRequired,
+  isLogin: PropTypes.bool.isRequired,
+  setIsLogin: PropTypes.func.isRequired,
 };
+
 export default Login;

@@ -13,7 +13,7 @@ const App = () => {
 
   useEffect(() => {
     const currentUser = auth.currentUser;
-    console.log(currentUser);
+     console.log(currentUser);
      if(currentUser){
       setUser(currentUser)
      }
