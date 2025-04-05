@@ -96,22 +96,22 @@ const Register = ({ isLogin, setIsLogin }) => {
   };
 
   return (
-    <section className="flex items-center justify-center min-h-screen bg-gradient-to-br background-image  p-4">
+    <section className=" background-image flex items-center justify-center min-h-screen   p-4">
       <div
         ref={formRef}
-        className="bg-white bg-opacity-95 rounded-2xl shadow-lg p-6 w-full max-w-sm flex flex-col items-center"
+        className="p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center"
       >
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-blue-900">Sign Up for WhisperWave</h1>
-          <p className="text-sm text-gray-600 mt-1">Create an account to start chatting</p>
+        <div className="mb-10 text-center">
+          <h1 className="text-3xl font-bold text-green-800">Sign Up for WhisperWave</h1>
+          <p className="text-sm text-gray-600 mt-1">Welcome, Create an account to start chatting</p>
         </div>
 
-        <div className="w-full flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-3">
           <input
             type="text"
             name="fullName"
             onChange={handleChangeUserData}
-            className="input-field w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             placeholder="Full Name"
             required
           />
@@ -119,7 +119,7 @@ const Register = ({ isLogin, setIsLogin }) => {
             type="email"
             name="email"
             onChange={handleChangeUserData}
-            className="input-field w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             placeholder="Email"
             required
           />
@@ -127,17 +127,17 @@ const Register = ({ isLogin, setIsLogin }) => {
             type="password"
             name="password"
             onChange={handleChangeUserData}
-            className="input-field w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             placeholder="Password"
             required
           />
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          {error && <p className="mb-3 text-sm text-red-500 text-center">{error}</p>}
           <button
             ref={buttonRef}
             disabled={isLoading}
             onClick={handleAuth}
-            className={`w-full p-3 bg-blue-600 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
-              isLoading ? "opacity-75 cursor-not-allowed" : "hover:bg-blue-700"
+            className={`w-full p-2 bg-[#01aa85] text-white font-bold rounded-md flex items-center justify-center gap-2 transition-colors ${
+              isLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-[#008970]"
             }`}
             onMouseEnter={() => handleButtonHover(true)}
             onMouseLeave={() => handleButtonHover(false)}
@@ -152,10 +152,10 @@ const Register = ({ isLogin, setIsLogin }) => {
           </button>
         </div>
 
-        <div className="mt-6 text-center">
+        <div className="mt-5 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-blue-600 hover:text-blue-800 underline transition-colors"
+            className="text-sm  text-green-500 underline hover:text-green-800 transition-colors"
           >
             Already have an account? Sign In
           </button>
@@ -166,7 +166,7 @@ const Register = ({ isLogin, setIsLogin }) => {
 };
 
 Register.propTypes = {
-  isLogin: PropTypes.bool.isRequired,
+  isLogin: PropTypes.bool.isRequired, // Corrected from func to bool
   setIsLogin: PropTypes.func.isRequired,
 };
 

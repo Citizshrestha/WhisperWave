@@ -14,7 +14,6 @@ const Login = ({ isLogin, setIsLogin }) => {
   const buttonRef = useRef(null);
 
   useEffect(() => {
-    // Ensure visibility before animating
     gsap.set(formRef.current, { opacity: 1 });
     gsap.fromTo(
       formRef.current,
@@ -105,22 +104,22 @@ const Login = ({ isLogin, setIsLogin }) => {
   };
 
   return (
-    <section className="flex items-center justify-center min-h-screen bg-gradient-to-br  p-4">
+    <section className="flex items-center justify-center min-h-screen bg-gradient-to-br background-image p-4">
       <div
         ref={formRef}
-        className="bg-white bg-opacity-95 rounded-2xl shadow-lg p-6 w-full max-w-sm flex flex-col items-center"
+        className="p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center"
       >
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-blue-900">Login to WhisperWave</h1>
-          <p className="text-sm text-gray-600 mt-1">Welcome back, sign in to continue</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-[#008C72]">Login to WhisperWave</h1>
+          <p className="text-sm text-gray-600 mt-1">Welcome back, Login to continue</p>
         </div>
 
-        <form onSubmit={handleLoginAuth} className="w-full flex flex-col gap-4">
+        <form onSubmit={handleLoginAuth} className="w-full flex flex-col gap-3">
           <input
             name="email"
             value={userData.email}
             onChange={handleChangeUserData}
-            className="input-field w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             type="email"
             placeholder="Email"
             required
@@ -129,18 +128,18 @@ const Login = ({ isLogin, setIsLogin }) => {
             name="password"
             value={userData.password}
             onChange={handleChangeUserData}
-            className="input-field w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             type="password"
             placeholder="Password"
             required
           />
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          {error && <p className="mb-3 text-sm text-red-500 text-center">{error}</p>}
           <button
             ref={buttonRef}
             type="submit"
             disabled={isLoading}
-            className={`w-full p-3 bg-blue-600 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition-all ${
-              isLoading ? "opacity-75 cursor-not-allowed" : "hover:bg-blue-700"
+            className={`w-full p-2 bg-[#01aa85] text-white font-bold rounded-md flex items-center justify-center gap-2 transition-colors ${
+              isLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-[#008970]"
             }`}
             onMouseEnter={() => handleButtonHover(true)}
             onMouseLeave={() => handleButtonHover(false)}
@@ -157,12 +156,12 @@ const Login = ({ isLogin, setIsLogin }) => {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-5 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-blue-600 hover:text-blue-800 underline transition-colors"
+            className="text-sm text-green-500 hover:text-green-800 underline transition-colors"
           >
-            Don’t have an account? Register
+            Not have an account? Register
           </button>
         </div>
       </div>
@@ -171,7 +170,7 @@ const Login = ({ isLogin, setIsLogin }) => {
 };
 
 Login.propTypes = {
-  isLogin: PropTypes.bool.isRequired,
+  isLogin: PropTypes.bool.isRequired, 
   setIsLogin: PropTypes.func.isRequired,
 };
 
