@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import defaultAvatar from "../../public/assets/default.jpg";
 import { formatTimestamp } from "../utils/formatTimestamp";
 import { RiSendPlaneFill } from "react-icons/ri";
-import { auth, listenForMessages, sendMessage, updateMessage, deleteMessage } from "../firebase/firebase";
+import { auth, listenForMessages, sendMessage, updateMessage, deleteMessage, uploadImage } from "../firebase/firebase";
 import logo from "../../public/assets/logo.png";
 import PropTypes from "prop-types";
 
@@ -12,6 +12,7 @@ const Chatbox = ({ selectedUser }) => {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editedText, setEditedText] = useState("");
   const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const chatId = auth?.currentUser?.uid && selectedUser?.uid
     ? auth.currentUser.uid < selectedUser.uid
@@ -54,13 +55,21 @@ const Chatbox = ({ selectedUser }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!messageText.trim() || !chatId || !user1 || !user2) return;
+    if ((!messageText.trim() && !fileInputRef.current?.files?.length) || !chatId || !user1 || !user2) return;
 
     try {
-      await sendMessage(messageText, chatId, user1, user2);
+      let imageUrl = null;
+      if (fileInputRef.current?.files?.length) {
+        const file = fileInputRef.current.files[0];
+        imageUrl = await uploadImage(file, chatId);
+        fileInputRef.current.value = "";
+      }
+      await sendMessage(messageText, chatId, user1, user2, imageUrl);
       setMessageText("");
     } catch (error) {
       console.error("Error sending message:", error.message);
+      // CHANGED: Optional - Add user-facing error feedback
+      // alert(`Failed to send message: ${error.message}`);
     }
   };
 
@@ -71,9 +80,7 @@ const Chatbox = ({ selectedUser }) => {
     }
   
     try {
-      console.log("Attempting to edit message:", { chatId, messageId, newText });
       await updateMessage(chatId, messageId, newText);
-      console.log("Message edited successfully");
       setEditingMessageId(null);
       setEditedText("");
     } catch (error) {
@@ -91,12 +98,14 @@ const Chatbox = ({ selectedUser }) => {
 
     try {
       await deleteMessage(chatId, messageId);
-      console.log("Message deleted successfully");
     } catch (error) {
       console.error("Error deleting message:", error.message);
     }
   };
 
+  const handleImageClick = () => {
+    fileInputRef.current.click();
+  };
 
   return (
     <>
@@ -106,8 +115,16 @@ const Chatbox = ({ selectedUser }) => {
             <main className="flex items-center gap-3">
               <img 
                 src={selectedUser?.image || defaultAvatar} 
-                className="object-cover rounded-full w-11 h-11" 
+                className="object-cover rounded-full w-11 h-11 cursor-pointer" 
                 alt={`${selectedUser?.fullName || 'User'} profile`} 
+                onClick={handleImageClick}
+              />
+              <input 
+                type="file"
+                ref={fileInputRef} 
+                className="hidden" // CHANGED: Removed redundant style={{ display: 'none' }}
+                accept="image/*"
+                onChange={handleSendMessage}
               />
               <span>
                 <h3 className="font-semibold text-[#2A3D39] text-lg">
@@ -154,7 +171,11 @@ const Chatbox = ({ selectedUser }) => {
                             ) : (
                               <>
                                 <div className="relative flex items-center justify-center p-6 bg-white rounded-lg shadow-sm group">
-                                  <h4>{msg.text}</h4>
+                                  {msg.imageUrl ? (
+                                    <img src={msg.imageUrl} alt="Sent Image" className="max-w-full h-auto rounded" />
+                                  ) : (
+                                    <h4>{msg.text}</h4>
+                                  )}
                                   <div className="absolute top-0 right-0 flex-col hidden gap-1 p-1 group-hover:flex">
                                     <button
                                       onClick={() => startEditing(msg.id, msg.text)}
@@ -188,7 +209,11 @@ const Chatbox = ({ selectedUser }) => {
                           />
                           <div>
                             <div className="flex items-center justify-center p-6 bg-white rounded-lg shadow-sm">
-                              <h4>{msg.text}</h4>
+                              {msg.imageUrl ? (
+                                <img src={msg.imageUrl} alt="Received Image" className="max-w-full h-auto rounded" />
+                              ) : (
+                                <h4>{msg.text}</h4>
+                              )}
                             </div>
                             <p className="mt-3 text-gray-400 text-sx">
                               {formatTimestamp(msg?.timestamp)}
@@ -216,7 +241,7 @@ const Chatbox = ({ selectedUser }) => {
                 <button 
                   type="submit" 
                   className="flex items-center justify-center absolute right-3 p-2 rounded-full bg-[#D9f2ed] hover:bg-[#c8eae3]"
-                  disabled={!messageText.trim()}
+                  disabled={!messageText.trim() && !fileInputRef.current?.files?.length}
                 >
                   <RiSendPlaneFill color="#01AA85" />
                 </button>

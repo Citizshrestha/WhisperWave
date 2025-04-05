@@ -17,6 +17,7 @@ import {
   where,
   limit,
 } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -30,6 +31,32 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app); // Initialized Firebase Storage
+
+// CHANGED: Enhanced error handling for uploadImage
+export const uploadImage = async (file, chatId) => {
+  if (!auth.currentUser) throw new Error("User not authenticated");
+  if (!file) throw new Error("No file provided");
+
+  try {
+    const storageRef = ref(storage, `chat_images/${chatId}/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const imageUrl = await getDownloadURL(storageRef);
+    return imageUrl;
+  } catch (error) {
+    console.error("Error uploading image:", error.message);
+    // Provide more specific error messages based on the error type
+    if (error.code === "storage/unauthorized") {
+      throw new Error("You don’t have permission to upload images.");
+    } else if (error.code === "storage/canceled") {
+      throw new Error("Image upload was canceled.");
+    } else if (error.code === "storage/unknown") {
+      throw new Error("An unknown error occurred during image upload. Please try again.");
+    } else {
+      throw new Error(`Image upload failed: ${error.message}`);
+    }
+  }
+};
 
 export const listenForChats = (setChats) => {
   if (!auth.currentUser) {
@@ -37,7 +64,6 @@ export const listenForChats = (setChats) => {
     return () => {};
   }
 
-  // Use a query to only fetch chats the user has access to
   const chatsQuery = query(
     collection(db, "chats"),
     where("users", "array-contains", auth.currentUser.uid)
@@ -47,7 +73,7 @@ export const listenForChats = (setChats) => {
       id: doc.id,
       ...doc.data(),
     }));
-    setChats(chatList); // No need to filter since query handles it
+    setChats(chatList);
   }, (error) => {
     console.error("Chat listener error:", error);
     setChats([]);
@@ -55,7 +81,7 @@ export const listenForChats = (setChats) => {
   return unsubscribe;
 };
 
-export const sendMessage = async (messageText, chatId, user1, user2) => {
+export const sendMessage = async (messageText, chatId, user1, user2, imageUrl = null) => {
   if (!auth.currentUser) throw new Error("User not authenticated");
 
   const chatRef = doc(db, "chats", chatId);
@@ -63,23 +89,25 @@ export const sendMessage = async (messageText, chatId, user1, user2) => {
 
   try {
     const chatDoc = await getDoc(chatRef);
-    
+    const lastMessage = imageUrl ? "Image sent" : messageText;
+
     if (!chatDoc.exists()) {
       await setDoc(chatRef, {
         users: [user1, user2],
-        lastMessage: messageText,
+        lastMessage,
         lastMessageTimestamp: serverTimestamp(),
         created: serverTimestamp(),
       });
     } else {
       await updateDoc(chatRef, {
-        lastMessage: messageText,
+        lastMessage,
         lastMessageTimestamp: serverTimestamp(),
       });
     }
 
     await addDoc(messagesRef, {
-      text: messageText,
+      text: messageText || "",
+      imageUrl: imageUrl || null,
       senderId: auth.currentUser.uid,
       timestamp: serverTimestamp(),
     });
@@ -102,7 +130,6 @@ export const listenForMessages = (chatId, callback) => {
   const unsubscribe = onSnapshot(
     messagesQuery,
     (snapshot) => {
-      // FIXED: Corrected the map function syntax by removing the invalid "10X10" and duplicate map definition
       const messages = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -120,27 +147,24 @@ export const listenForMessages = (chatId, callback) => {
 };
 
 export const updateMessage = async (chatId, messageId, newText) => {
-  const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
+  const messageRef = doc(db, "chats", chatId, "messages", messageId);
   const chatRef = doc(db, "chats", chatId);
 
   try {
-    // Step 1: Update the message document
     await updateDoc(messageRef, {
       text: newText,
       edited: true,
       editedAt: serverTimestamp(),
     });
 
-    // Step 2: Check if this is the latest message
-    const messagesRef = collection(db, "chats", chatId, "messages"); // Use collection reference
+    const messagesRef = collection(db, "chats", chatId, "messages");
     const q = query(messagesRef, orderBy("timestamp", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
     const latestMessage = querySnapshot.docs[0];
 
-    // Step 3: If the updated message is the latest, update the chat document
     if (latestMessage && latestMessage.id === messageId) {
       await updateDoc(chatRef, {
-        lastMessage: newText, 
+        lastMessage: newText,
         lastMessageTimestamp: serverTimestamp(),
       });
     }
@@ -152,29 +176,24 @@ export const updateMessage = async (chatId, messageId, newText) => {
 
 export const deleteMessage = async (chatId, messageId) => {
   try {
-    // Step 1: Delete the message from the messages subcollection
-    const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
+    const messageRef = doc(db, "chats", chatId, "messages", messageId);
     await deleteDoc(messageRef);
 
-    // Step 2: Fetch the most recent remaining message (if any)
-    const messagesRef = collection(db, 'chats', chatId, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
+    const messagesRef = collection(db, "chats", chatId, "messages");
+    const q = query(messagesRef, orderBy("timestamp", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
 
-    // Step 3: Update the lastMessage and lastMessageTimestamp in the chats document
-    const chatRef = doc(db, 'chats', chatId);
+    const chatRef = doc(db, "chats", chatId);
     if (!querySnapshot.empty) {
-      // If there are remaining messages, update with the most recent one
       const lastMessageDoc = querySnapshot.docs[0];
       const lastMessageData = lastMessageDoc.data();
       await updateDoc(chatRef, {
-        lastMessage: lastMessageData.text,
+        lastMessage: lastMessageData.text || (lastMessageData.imageUrl ? "Image sent" : ""),
         lastMessageTimestamp: lastMessageData.timestamp,
       });
     } else {
-      // If no messages remain, clear the lastMessage and lastMessageTimestamp
       await updateDoc(chatRef, {
-        lastMessage: '',
+        lastMessage: "",
         lastMessageTimestamp: null,
       });
     }
@@ -196,4 +215,5 @@ export {
   getDocs,
   onSnapshot,
   updateDoc,
+  storage,
 };
