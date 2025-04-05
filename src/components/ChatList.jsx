@@ -108,27 +108,26 @@ const Chatlist = ({ setSelectedUser }) => {
     fileInputRef.current.click();
   };
 
-  // CHANGED: Fixed typo, standardized "Image sent", and added error handling
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    const chatId = e.target.dataset.chatId;
+    const chatId = e.target.dataset.chatId; // Get chatId from data attribute
+    
     if (!file || !chatId) return;
 
     try {
-      const imageUrl = await uploadImage(file, chatId);
-      const chatRef = doc(db, "chats", chatId);
-      await updateDoc(chatRef, {
-        lastMessage: "Image sent", // Standardized with sendMessage
-        lastMessageTimestamp: serverTimestamp(),
-      });
+      const currentChat = chats.find(chat => chat.id === chatId);
+      if (!currentChat) return;
 
-      const selectedChat = chats.find(chat => chat.id === chatId);
-      if (!selectedChat?.otherUser?.uid) throw new Error("Other user not found");
-      await sendMessage("", chatId, auth.currentUser.uid, selectedChat.otherUser.uid, imageUrl);
-      fileInputRef.current.value = ""; // Reset file input after upload
+      const user1 = auth.currentUser.uid;
+      const user2 = currentChat.otherUser?.uid;
+
+      if (!user1 || !user2) return;
+
+      const imageUrl = await uploadImage(file, chatId);
+      await sendMessage("", chatId, user1, user2, imageUrl);
+      fileInputRef.current.value = ""; // Reset file input
     } catch (error) {
-      console.error("Error uploading image:", error.message);
-      setError(`Failed to upload image: ${error.message}`); // Show error to user
+      console.error("Error uploading image:", error);
     }
   };
 
@@ -141,11 +140,10 @@ const Chatlist = ({ setSelectedUser }) => {
         <main className="flex items-center gap-3 text-white">
           <img 
             src={user?.image || defaultAvatar} 
-            className="w-[44px] h-[44px] object-cover rounded-full cursor-pointer" // Added cursor-pointer
+            className="w-[44px] h-[44px] object-cover rounded-full cursor-pointer"
             alt="User profile" 
-            onClick={() => handleImageClick(chats[0]?.id)} // Example: first chat
+            onClick={() => handleImageClick(chats[0]?.id)}
           />
-          {/* CHANGED: Added className="hidden" to hide file input */}
           <input 
             type="file"
             ref={fileInputRef}
@@ -197,7 +195,7 @@ const Chatlist = ({ setSelectedUser }) => {
               <div className="flex items-start w-full gap-3 text-white">
                 <img 
                   src={chat.otherUser?.image || defaultAvatar} 
-                  className="h-[40px] w-[40px] rounded-full object-cover cursor-pointer" // Added cursor-pointer
+                  className="h-[40px] w-[40px] rounded-full object-cover cursor-pointer"
                   alt={chat.otherUser?.fullName || "User profile"} 
                   onClick={(e) => {
                     e.stopPropagation();
