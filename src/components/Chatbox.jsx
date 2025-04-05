@@ -225,10 +225,10 @@ const Chatbox = ({ selectedUser }) => {
           </main>
         </section>
       ) : (
-        <section className="h-screen w-[100%] bg-[#e5f6f3]">
+        <section className="h-screen w-[100%] bg-[#e5f6f3] background-image">
           <div className="flex flex-col justify-center items-center h-[100vh]">
             <img src={logo} alt="Chatfrik logo" width={100} />
-            <h1 className="text-[30px] font-bold text-teal-700 mt-5">Welcome to Chatkick</h1>
+            <h1 className="text-[30px] font-bold text-teal-700 mt-5">Welcome to WhisperWave</h1>
             <p className="text-gray-500">Connect and chat with friends easily, fast and free</p>
           </div>
         </section>
