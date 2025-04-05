@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import defaultAvatar from "../../public/assets/default.jpg";
 import PropTypes from "prop-types";
 import { RiMore2Fill } from "react-icons/ri";
 import SearchModal from "./SearchModal";
 import { formatTimestamp } from "../utils/formatTimestamp";
-import { auth, db } from "../firebase/firebase";
-import { doc, onSnapshot, collection, query, where, getDoc } from "firebase/firestore";
+import { auth, db, sendMessage, uploadImage } from "../firebase/firebase";
+import { doc, onSnapshot, collection, query, where, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 const Chatlist = ({ setSelectedUser }) => {
   const [chats, setChats] = useState([]);
@@ -13,8 +13,7 @@ const Chatlist = ({ setSelectedUser }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userCache, setUserCache] = useState({});
- 
-  
+  const fileInputRef = useRef(null);
 
   const fetchUserData = async (userId) => {
     if (userCache[userId]) return userCache[userId];
@@ -66,7 +65,6 @@ const Chatlist = ({ setSelectedUser }) => {
               
               return {
                 id: doc.id,
-                // CHANGED: Ensure lastMessage is always a string
                 lastMessage: chatData.lastMessage || "No messages yet",
                 lastMessageTimestamp: chatData.lastMessageTimestamp,
                 otherUser,
@@ -77,12 +75,12 @@ const Chatlist = ({ setSelectedUser }) => {
           setLoading(false);
           setError(null);
         } catch (err) {
-          setError("Failed to process chats",err.message);
+          setError(`Failed to process chats: ${err.message}`);
           setLoading(false);
         }
       },
       (err) => {
-        setError("Failed to load chats", err.message);
+        setError(`Failed to load chats: ${err.message}`);
         setLoading(false);
       }
     );
@@ -105,6 +103,35 @@ const Chatlist = ({ setSelectedUser }) => {
     setSelectedUser(user);
   };
 
+  const handleImageClick = (chatId) => {
+    fileInputRef.current.dataset.chatId = chatId;
+    fileInputRef.current.click();
+  };
+
+  // CHANGED: Fixed typo, standardized "Image sent", and added error handling
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    const chatId = e.target.dataset.chatId;
+    if (!file || !chatId) return;
+
+    try {
+      const imageUrl = await uploadImage(file, chatId);
+      const chatRef = doc(db, "chats", chatId);
+      await updateDoc(chatRef, {
+        lastMessage: "Image sent", // Standardized with sendMessage
+        lastMessageTimestamp: serverTimestamp(),
+      });
+
+      const selectedChat = chats.find(chat => chat.id === chatId);
+      if (!selectedChat?.otherUser?.uid) throw new Error("Other user not found");
+      await sendMessage("", chatId, auth.currentUser.uid, selectedChat.otherUser.uid, imageUrl);
+      fileInputRef.current.value = ""; // Reset file input after upload
+    } catch (error) {
+      console.error("Error uploading image:", error.message);
+      setError(`Failed to upload image: ${error.message}`); // Show error to user
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -114,8 +141,17 @@ const Chatlist = ({ setSelectedUser }) => {
         <main className="flex items-center gap-3 text-white">
           <img 
             src={user?.image || defaultAvatar} 
-            className="w-[44px] h-[44px] object-cover rounded-full" 
+            className="w-[44px] h-[44px] object-cover rounded-full cursor-pointer" // Added cursor-pointer
             alt="User profile" 
+            onClick={() => handleImageClick(chats[0]?.id)} // Example: first chat
+          />
+          {/* CHANGED: Added className="hidden" to hide file input */}
+          <input 
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept="image/*"
+            onChange={handleImageUpload}
           />
           <span>
             <h3 className="p-0 font-semibold text-white md:text-[17px]">
@@ -161,15 +197,19 @@ const Chatlist = ({ setSelectedUser }) => {
               <div className="flex items-start w-full gap-3 text-white">
                 <img 
                   src={chat.otherUser?.image || defaultAvatar} 
-                  className="h-[40px] w-[40px] rounded-full object-cover" 
+                  className="h-[40px] w-[40px] rounded-full object-cover cursor-pointer" // Added cursor-pointer
                   alt={chat.otherUser?.fullName || "User profile"} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleImageClick(chat.id);
+                  }}
                 />
                 <div className="flex-1 min-w-0 text-white">
                   <h2 className="font-semibold text-[17px] truncate">
                     {chat.otherUser?.fullName || "ChatFrik User"}
                   </h2>
                   <p className="font-light text-[14px] truncate">
-                  {chat.lastMessage}
+                    {chat.lastMessage}
                   </p>
                 </div>
                 {chat.lastMessageTimestamp && (
