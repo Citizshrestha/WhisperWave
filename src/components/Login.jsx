@@ -6,7 +6,8 @@ import PropTypes from "prop-types";
 import { gsap } from "gsap";
 
 const Login = ({ isLogin, setIsLogin }) => {
-  const [userData, setUserData] = useState({ email: "", password: "" });
+  const [userData, setUserData] = useState({ email: "", 
+                                             password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -104,17 +105,17 @@ const Login = ({ isLogin, setIsLogin }) => {
   };
 
   return (
-    <section className="flex items-center justify-center min-h-screen bg-gradient-to-br background-image p-4">
+    <section className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br background-image">
       <div
         ref={formRef}
         className="p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center"
       >
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-[#008C72]">Login to WhisperWave</h1>
-          <p className="text-sm text-gray-600 mt-1">Welcome back, Login to continue</p>
+          <p className="mt-1 text-sm text-gray-600">Welcome back, Login to continue</p>
         </div>
 
-        <form onSubmit={handleLoginAuth} className="w-full flex flex-col gap-3">
+        <form onSubmit={handleLoginAuth} className="flex flex-col w-full gap-3">
           <input
             name="email"
             value={userData.email}
@@ -133,7 +134,7 @@ const Login = ({ isLogin, setIsLogin }) => {
             placeholder="Password"
             required
           />
-          {error && <p className="mb-3 text-sm text-red-500 text-center">{error}</p>}
+          {error && <p className="mb-3 text-sm text-center text-red-500">{error}</p>}
           <button
             ref={buttonRef}
             type="submit"
@@ -159,7 +160,7 @@ const Login = ({ isLogin, setIsLogin }) => {
         <div className="mt-5 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-green-500 hover:text-green-800 underline transition-colors"
+            className="text-sm text-green-500 underline transition-colors hover:text-green-800"
           >
             Not have an account? Register
           </button>
