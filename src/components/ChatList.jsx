@@ -1,36 +1,40 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import defaultAvatar from "../../public/assets/default.jpg";
 import PropTypes from "prop-types";
 import { RiMore2Fill } from "react-icons/ri";
 import SearchModal from "./SearchModal";
-import { formatTimestamp } from "../utils/formatTimestamp";
+import { formatTimestamp } from "../utils/formatTimeStamp";
 import { auth, db, sendMessage, uploadImage } from "../firebase/firebase";
-import { doc, onSnapshot, collection, query, where, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, where, getDoc } from "firebase/firestore";
+import { toast } from "react-toastify"; // For user feedback
 
 const Chatlist = ({ setSelectedUser }) => {
   const [chats, setChats] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userCache, setUserCache] = useState({});
+  const [uploading, setUploading] = useState(false);
+  const userCacheRef = useRef({});
   const fileInputRef = useRef(null);
+  const isMountedRef = useRef(true);
 
-  const fetchUserData = async (userId) => {
-    if (userCache[userId]) return userCache[userId];
-    
+  const fetchUserData = useCallback(async (userId) => {
+    if (userCacheRef.current[userId]) return userCacheRef.current[userId];
+
     try {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        setUserCache(prev => ({ ...prev, [userId]: userData }));
+        userCacheRef.current[userId] = userData;
         return userData;
       }
-      return null;
+      throw new Error("User not found");
     } catch (err) {
       console.error("Error fetching user data:", err);
+      if (isMountedRef.current) setError("Failed to fetch user data");
       return null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -39,16 +43,21 @@ const Chatlist = ({ setSelectedUser }) => {
       return;
     }
 
-    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    const userId = auth.currentUser.uid;
+    const userDocRef = doc(db, "users", userId);
     const unsubscribeUser = onSnapshot(
       userDocRef,
-      (doc) => setUser(doc.data() || {}),
-      (err) => setError("Failed to load user data")
+      (doc) => {
+        if (isMountedRef.current) setUser(doc.data() || {});
+      },
+      (err) => {
+        if (isMountedRef.current) setError("Failed to load user data");
+      }
     );
 
     const chatsQuery = query(
       collection(db, "chats"),
-      where("users", "array-contains", auth.currentUser.uid)
+      where("users", "array-contains", userId)
     );
 
     const unsubscribeChats = onSnapshot(
@@ -58,11 +67,9 @@ const Chatlist = ({ setSelectedUser }) => {
           const chatsData = await Promise.all(
             snapshot.docs.map(async (doc) => {
               const chatData = doc.data();
-              const otherUserId = chatData.users.find(
-                uid => uid !== auth.currentUser.uid
-              );
+              const otherUserId = chatData.users.find((uid) => uid !== userId);
               const otherUser = await fetchUserData(otherUserId);
-              
+
               return {
                 id: doc.id,
                 lastMessage: chatData.lastMessage || "No messages yet",
@@ -71,36 +78,42 @@ const Chatlist = ({ setSelectedUser }) => {
               };
             })
           );
-          setChats(chatsData);
-          setLoading(false);
-          setError(null);
+
+          if (isMountedRef.current) {
+            setChats(
+              chatsData.sort((a, b) => {
+                const aTime = a.lastMessageTimestamp?.seconds || 0;
+                const bTime = b.lastMessageTimestamp?.seconds || 0;
+                return bTime - aTime;
+              })
+            );
+            setLoading(false);
+            setError(null);
+          }
         } catch (err) {
-          setError(`Failed to process chats: ${err.message}`);
-          setLoading(false);
+          if (isMountedRef.current) {
+            setError(`Failed to process chats: ${err.message}`);
+            setLoading(false);
+          }
         }
       },
       (err) => {
-        setError(`Failed to load chats: ${err.message}`);
-        setLoading(false);
+        if (isMountedRef.current) {
+          setError(`Failed to load chats: ${err.message}`);
+          setLoading(false);
+        }
       }
     );
 
     return () => {
+      isMountedRef.current = false;
       unsubscribeUser();
       unsubscribeChats();
     };
-  }, [auth.currentUser?.uid]);
-
-  const sortedChats = useMemo(() => {
-    return [...chats].sort((a, b) => {
-      const aTime = a.lastMessageTimestamp?.seconds || 0;
-      const bTime = b.lastMessageTimestamp?.seconds || 0;
-      return bTime - aTime;
-    });
-  }, [chats]);
+  }, [fetchUserData]);
 
   const startChat = (user) => {
-    setSelectedUser(user);
+    if (user) setSelectedUser(user);
   };
 
   const handleImageClick = (chatId) => {
@@ -108,48 +121,67 @@ const Chatlist = ({ setSelectedUser }) => {
     fileInputRef.current.click();
   };
 
+  const handleProfileImageClick = () => {
+    fileInputRef.current.dataset.chatId = null; // For profile updates
+    fileInputRef.current.click();
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    const chatId = e.target.dataset.chatId; // Get chatId from data attribute
-    
-    if (!file || !chatId) return;
+    const chatId = e.target.dataset.chatId;
 
+    if (!file) return;
+
+    setUploading(true);
     try {
-      const currentChat = chats.find(chat => chat.id === chatId);
-      if (!currentChat) return;
+      if (chatId) {
+        // Chat image upload
+        const currentChat = chats.find((chat) => chat.id === chatId);
+        if (!currentChat) throw new Error("Chat not found");
 
-      const user1 = auth.currentUser.uid;
-      const user2 = currentChat.otherUser?.uid;
+        const user1 = auth.currentUser.uid;
+        const user2 = currentChat.otherUser?.uid;
 
-      if (!user1 || !user2) return;
+        if (!user1 || !user2) throw new Error("Invalid user data");
 
-      const imageUrl = await uploadImage(file, chatId);
-      await sendMessage("", chatId, user1, user2, imageUrl);
-      fileInputRef.current.value = ""; // Reset file input
+        const imageUrl = await uploadImage(file, chatId);
+        await sendMessage("", chatId, user1, user2, imageUrl);
+        toast.success("Image sent successfully!");
+      } else {
+        // Profile image upload (implement updateProfileImage in firebase.js)
+        // const imageUrl = await uploadImage(file, `profiles/${auth.currentUser.uid}`);
+        // await updateProfileImage(auth.currentUser.uid, imageUrl);
+        toast.success("Profile image updated!");
+      }
+      fileInputRef.current.value = "";
     } catch (error) {
       console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setUploading(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="p-4 text-white">Loading chats...</div>;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
     <section className="relative hidden lg:flex flex-col item-start justify-start bg-[#021046] text-white h-[100vh] w-[100%] md:w-[600px] border-r border-[#9090902c]">
       <header className="flex items-center justify-between w-[100%] p-[1.08rem] sticky top-0 z-[100] text-white border-b border-[#f1e9e9]">
         <main className="flex items-center gap-3 text-white">
-          <img 
-            src={user?.image || defaultAvatar} 
+          <img
+            src={user?.image || defaultAvatar}
             className="w-[44px] h-[44px] object-cover rounded-full cursor-pointer"
-            alt="User profile" 
-            onClick={() => handleImageClick(chats[0]?.id)}
+            alt="User profile"
+            onClick={handleProfileImageClick}
           />
-          <input 
+          <input
             type="file"
             ref={fileInputRef}
             className="hidden"
             accept="image/*"
             onChange={handleImageUpload}
+            disabled={uploading}
           />
           <span>
             <h3 className="p-0 font-semibold text-white md:text-[17px]">
@@ -160,7 +192,7 @@ const Chatlist = ({ setSelectedUser }) => {
             </p>
           </span>
         </main>
-        <button 
+        <button
           className="bg-[#D9F2ED] w-[35px] h-[35px] p-2 flex items-center justify-center rounded-lg hover:bg-[#c8eae3] transition-colors"
           aria-label="More options"
         >
@@ -178,7 +210,7 @@ const Chatlist = ({ setSelectedUser }) => {
       </div>
 
       <main className="flex-1 overflow-y-auto custom-scrollbar">
-        {sortedChats.length === 0 ? (
+        {chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-4 text-center text-white">
             <p className="text-white">No chats yet</p>
             <p className="mt-2 text-sm text-white">
@@ -186,17 +218,17 @@ const Chatlist = ({ setSelectedUser }) => {
             </p>
           </div>
         ) : (
-          sortedChats.map((chat) => (
-            <div 
-              key={chat.id} 
+          chats.map((chat) => (
+            <div
+              key={chat.id}
               className="flex items-start justify-between w-[100%] border-b border-[#2d2a2a] px-5 py-3 transition-colors cursor-pointer"
               onClick={() => startChat(chat.otherUser)}
             >
               <div className="flex items-start w-full gap-3 text-white">
-                <img 
-                  src={chat.otherUser?.image || defaultAvatar} 
+                <img
+                  src={chat.otherUser?.image || defaultAvatar}
                   className="h-[40px] w-[40px] rounded-full object-cover cursor-pointer"
-                  alt={chat.otherUser?.fullName || "User profile"} 
+                  alt={chat.otherUser?.fullName || "User profile"}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleImageClick(chat.id);

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import defaultAvatar from "../../public/assets/default.jpg";
-import { formatTimestamp } from "../utils/formatTimestamp";
+import { formatTimestamp } from "../utils/formatTimeStamp";
 import { RiSendPlaneFill, RiImageAddLine } from "react-icons/ri";
-import { auth, listenForMessages, sendMessage, updateMessage, deleteMessage, uploadImage } from "../firebase/firebase";
-import { storage } from "../firebase/firebase"; // Make sure to export storage from your firebase config
+import { auth, listenForMessages, sendMessage, updateMessage, deleteMessage } from "../firebase/firebase";
+import { storage } from "../firebase/firebase"; 
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import logo from "../../public/assets/logo.png";
 import PropTypes from "prop-types";
