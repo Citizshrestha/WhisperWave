@@ -4,23 +4,24 @@ import ChatList from "./components/ChatList";
 import Chatbox from "./components/Chatbox";
 import Login from "./components/Login";
 import Register from "./components/Register";
-import { auth } from "./firebase/firebase";
+import { supabase } from "./supabase/supabase";
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; 
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [user, setUser] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const prevUserRef = useRef(null); 
+  const prevUserRef = useRef(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user ?? null;
       setUser(user);
 
       // Show toast based on authentication state
       if (user && !prevUserRef.current) {
-        toast.success(`Welcome, ${user.displayName || 'User'}!`, {
+        toast.success(`Welcome, ${user.user_metadata.full_name || 'User'}!`, {
           position: "top-right",
           autoClose: 3000,
         });
@@ -35,14 +36,14 @@ const App = () => {
       prevUserRef.current = user;
     });
 
-    return () => unsubscribe();
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   return (
     <div>
-      {/* ToastContainer for global toast notifications */}
       <ToastContainer />
-
       {user ? (
         <div className="flex flex-col items-start w-full lg:flex-row">
           <Navlink />

@@ -4,9 +4,8 @@ import PropTypes from "prop-types";
 import { RiMore2Fill } from "react-icons/ri";
 import SearchModal from "./SearchModal";
 import { formatTimestamp } from "../utils/formatTimeStamp";
-import { auth, db, sendMessage, uploadImage } from "../firebase/firebase";
-import { doc, onSnapshot, collection, query, where, getDoc } from "firebase/firestore";
-import { toast } from "react-toastify"; // For user feedback
+import { supabase, getCurrentUser, sendMessage, uploadImage, listenForChats } from "../supabase/supabase";
+import { toast } from "react-toastify";
 
 const Chatlist = ({ setSelectedUser }) => {
   const [chats, setChats] = useState([]);
@@ -22,94 +21,103 @@ const Chatlist = ({ setSelectedUser }) => {
     if (userCacheRef.current[userId]) return userCacheRef.current[userId];
 
     try {
-      const userDoc = await getDoc(doc(db, "users", userId));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        userCacheRef.current[userId] = userData;
-        return userData;
-      }
-      throw new Error("User not found");
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      if (error) throw error;
+      userCacheRef.current[userId] = data;
+      console.log(`Fetched user data for ID ${userId}:`, data);
+      return data;
     } catch (err) {
-      console.error("Error fetching user data:", err);
+      console.error(`Error fetching user data for ID ${userId}:`, err);
       if (isMountedRef.current) setError("Failed to fetch user data");
       return null;
     }
   }, []);
 
   useEffect(() => {
-    if (!auth.currentUser) {
-      setError("User not authenticated");
-      setLoading(false);
-      return;
-    }
+    const initialize = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (!currentUser) {
+          console.error("No authenticated user found");
+          setError("User not authenticated");
+          setLoading(false);
+          return;
+        }
+        console.log("Current user ID:", currentUser.id);
 
-    const userId = auth.currentUser.uid;
-    const userDocRef = doc(db, "users", userId);
-    const unsubscribeUser = onSnapshot(
-      userDocRef,
-      (doc) => {
-        if (isMountedRef.current) setUser(doc.data() || {});
-      },
-      (err) => {
-        if (isMountedRef.current) setError("Failed to load user data");
-      }
-    );
+        // Fetch current user data
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", currentUser.id)
+          .single();
+        if (userError) {
+          console.error("User data fetch error:", userError);
+          throw new Error(`Failed to load user data: ${userError.message}`);
+        }
+        if (!userData) {
+          console.error("No user data found for ID:", currentUser.id);
+          throw new Error("User profile not found in users table");
+        }
+        console.log("Current user data:", userData);
+        setUser(userData);
 
-    const chatsQuery = query(
-      collection(db, "chats"),
-      where("users", "array-contains", userId)
-    );
-
-    const unsubscribeChats = onSnapshot(
-      chatsQuery,
-      async (snapshot) => {
-        try {
-          const chatsData = await Promise.all(
-            snapshot.docs.map(async (doc) => {
-              const chatData = doc.data();
-              const otherUserId = chatData.users.find((uid) => uid !== userId);
-              const otherUser = await fetchUserData(otherUserId);
-
-              return {
-                id: doc.id,
-                lastMessage: chatData.lastMessage || "No messages yet",
-                lastMessageTimestamp: chatData.lastMessageTimestamp,
-                otherUser,
-              };
-            })
-          );
-
-          if (isMountedRef.current) {
-            setChats(
-              chatsData.sort((a, b) => {
-                const aTime = a.lastMessageTimestamp?.seconds || 0;
-                const bTime = b.lastMessageTimestamp?.seconds || 0;
-                return bTime - aTime;
+        // Listen for chats
+        const unsubscribeChats = listenForChats(async (chatsData) => {
+          try {
+            const enrichedChats = await Promise.all(
+              chatsData.map(async (chat) => {
+                const otherUserId = chat.users.find((uid) => uid !== currentUser.id);
+                const otherUser = await fetchUserData(otherUserId);
+                return {
+                  id: chat.id,
+                  lastMessage: chat.last_message || "No messages yet",
+                  lastMessageTimestamp: chat.last_message_timestamp
+                    ? new Date(chat.last_message_timestamp)
+                    : null,
+                  otherUser,
+                };
               })
             );
-            setLoading(false);
-            setError(null);
+
+            if (isMountedRef.current) {
+              setChats(
+                enrichedChats.sort((a, b) => {
+                  const aTime = a.lastMessageTimestamp?.getTime() || 0;
+                  const bTime = b.lastMessageTimestamp?.getTime() || 0;
+                  return bTime - aTime;
+                })
+              );
+              setLoading(false);
+              setError(null);
+            }
+          } catch (err) {
+            if (isMountedRef.current) {
+              console.error("Chat processing error:", err);
+              setError(`Failed to process chats: ${err.message}`);
+              setLoading(false);
+            }
           }
-        } catch (err) {
-          if (isMountedRef.current) {
-            setError(`Failed to process chats: ${err.message}`);
-            setLoading(false);
-          }
-        }
-      },
-      (err) => {
+        });
+
+        return () => {
+          isMountedRef.current = false;
+          unsubscribeChats();
+        };
+      } catch (err) {
+        console.error("Initialization error:", err);
         if (isMountedRef.current) {
-          setError(`Failed to load chats: ${err.message}`);
+          setError(err.message);
           setLoading(false);
         }
       }
-    );
-
-    return () => {
-      isMountedRef.current = false;
-      unsubscribeUser();
-      unsubscribeChats();
     };
+
+    initialize();
   }, [fetchUserData]);
 
   const startChat = (user) => {
@@ -122,7 +130,7 @@ const Chatlist = ({ setSelectedUser }) => {
   };
 
   const handleProfileImageClick = () => {
-    fileInputRef.current.dataset.chatId = null; // For profile updates
+    fileInputRef.current.dataset.chatId = "";
     fileInputRef.current.click();
   };
 
@@ -130,17 +138,26 @@ const Chatlist = ({ setSelectedUser }) => {
     const file = e.target.files[0];
     const chatId = e.target.dataset.chatId;
 
-    if (!file) return;
+    console.log("handleImageUpload: chatId =", chatId, "typeof chatId =", typeof chatId);
+
+    if (!file) {
+      console.log("No file selected");
+      return;
+    }
 
     setUploading(true);
     try {
-      if (chatId) {
+      const isValidUUID = (str) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+      if (chatId && isValidUUID(chatId)) {
         // Chat image upload
+        console.log("Processing chat image upload for chatId:", chatId);
         const currentChat = chats.find((chat) => chat.id === chatId);
         if (!currentChat) throw new Error("Chat not found");
 
-        const user1 = auth.currentUser.uid;
-        const user2 = currentChat.otherUser?.uid;
+        const user1 = (await getCurrentUser()).id;
+        const user2 = currentChat.otherUser?.id;
 
         if (!user1 || !user2) throw new Error("Invalid user data");
 
@@ -148,15 +165,24 @@ const Chatlist = ({ setSelectedUser }) => {
         await sendMessage("", chatId, user1, user2, imageUrl);
         toast.success("Image sent successfully!");
       } else {
-        // Profile image upload (implement updateProfileImage in firebase.js)
-        // const imageUrl = await uploadImage(file, `profiles/${auth.currentUser.uid}`);
-        // await updateProfileImage(auth.currentUser.uid, imageUrl);
+        // Profile image upload
+        console.log("Processing profile image upload");
+        const user = await getCurrentUser();
+        const filePath = `profiles/${user.id}`;
+        const imageUrl = await uploadImage(file, filePath);
+        console.log("Profile image URL:", imageUrl);
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({ image: imageUrl })
+          .eq("id", user.id);
+        if (updateError) throw new Error(`Failed to update profile image: ${updateError.message}`);
+        setUser((prev) => ({ ...prev, image: imageUrl }));
         toast.success("Profile image updated!");
       }
       fileInputRef.current.value = "";
     } catch (error) {
       console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
+      toast.error("Failed to upload image: " + error.message);
     } finally {
       setUploading(false);
     }
@@ -185,7 +211,7 @@ const Chatlist = ({ setSelectedUser }) => {
           />
           <span>
             <h3 className="p-0 font-semibold text-white md:text-[17px]">
-              {user?.fullName || "ChatFrik User"}
+              {user?.full_name || "ChatFrik User"}
             </h3>
             <p className="p-0 font-light text-[15px]">
               @{user?.username || "chatfrik"}
@@ -228,7 +254,7 @@ const Chatlist = ({ setSelectedUser }) => {
                 <img
                   src={chat.otherUser?.image || defaultAvatar}
                   className="h-[40px] w-[40px] rounded-full object-cover cursor-pointer"
-                  alt={chat.otherUser?.fullName || "User profile"}
+                  alt={chat.otherUser?.full_name || "User profile"}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleImageClick(chat.id);
@@ -236,7 +262,7 @@ const Chatlist = ({ setSelectedUser }) => {
                 />
                 <div className="flex-1 min-w-0 text-white">
                   <h2 className="font-semibold text-[17px] truncate">
-                    {chat.otherUser?.fullName || "ChatFrik User"}
+                    {chat.otherUser?.full_name || "ChatFrik User"}
                   </h2>
                   <p className="font-light text-[14px] truncate">
                     {chat.lastMessage}

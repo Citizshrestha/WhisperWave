@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { FaSignInAlt, FaSpinner } from "react-icons/fa";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db, doc, setDoc } from "../firebase/firebase";
+import { supabase, signInWithEmail } from "../supabase/supabase";
 import PropTypes from "prop-types";
 import { gsap } from "gsap";
+import { toast } from "react-toastify";
 
 const Login = ({ isLogin, setIsLogin }) => {
-  const [userData, setUserData] = useState({ email: "", 
-                                             password: "" });
+  const [userData, setUserData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -51,33 +50,29 @@ const Login = ({ isLogin, setIsLogin }) => {
     gsap.to(buttonRef.current, { scale: 0.95, duration: 0.3, ease: "power1.inOut" });
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, userData.email, userData.password);
-      const loggedInUser = userCredential.user;
+      const user = await signInWithEmail(userData.email, userData.password);
 
-      const userDocRef = doc(db, "users", loggedInUser.uid);
-      await setDoc(
-        userDocRef,
-        {
-          uid: loggedInUser.uid,
-          email: loggedInUser.email,
-          username: loggedInUser.email.split("@")[0],
-          fullName: loggedInUser.email.split("@")[0].charAt(0).toUpperCase() + loggedInUser.email.split("@")[0].slice(1),
+      await supabase
+        .from("users")
+        .upsert({
+          id: user.id,
+          email: userData.email,
+          username: userData.email.split("@")[0],
+          full_name: userData.email.split("@")[0].charAt(0).toUpperCase() + userData.email.split("@")[0].slice(1),
           image: "",
-        },
-        { merge: true }
-      );
+        });
 
       gsap.to(formRef.current, {
         opacity: 0,
         y: -50,
         duration: 0.8,
         ease: "power3.in",
-        onComplete: () => alert("Login Successful"),
+        onComplete: () => toast.success("Login Successful"),
       });
     } catch (error) {
       console.error("Login Error:", error.message);
       setError(
-        error.code === "auth/invalid-credential"
+        error.message.includes("invalid login credentials")
           ? "Invalid email or password. Please try again."
           : "Login Failed! " + error.message
       );
@@ -171,7 +166,7 @@ const Login = ({ isLogin, setIsLogin }) => {
 };
 
 Login.propTypes = {
-  isLogin: PropTypes.bool.isRequired, 
+  isLogin: PropTypes.bool.isRequired,
   setIsLogin: PropTypes.func.isRequired,
 };
 

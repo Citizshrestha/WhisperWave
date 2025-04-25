@@ -1,27 +1,18 @@
 export const formatTimestamp = (timestamp, showTime = false) => {
-  // Handle cases where timestamp might be undefined or null
   if (!timestamp) return "Just now";
-  
+
   let date;
-  
-  // Check if it's a Firestore Timestamp object
-  if (timestamp.toDate) {
-    date = timestamp.toDate();
-  } 
-  // Check if it's a raw timestamp object with seconds/nanoseconds
-  else if (timestamp.seconds) {
-    date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
-  }
-  // Check if it's already a Date object
-  else if (timestamp instanceof Date) {
+
+  if (typeof timestamp === "string") {
+    date = new Date(timestamp);
+  } else if (timestamp instanceof Date) {
     date = timestamp;
-  }
-  // If none of the above, return a fallback
-  else {
+  } else {
     return "Just now";
   }
 
-  // Format the date components
+  if (isNaN(date.getTime())) return "Just now";
+
   const dateOptions = { day: "numeric", month: "short", year: "numeric" };
   const timeOptions = { hour: "2-digit", minute: "2-digit" };
 

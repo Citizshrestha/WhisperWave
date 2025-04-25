@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { FaUserPlus } from "react-icons/fa";
 import PropTypes from "prop-types";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../firebase/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { supabase, signUpWithEmail } from "../supabase/supabase";
 import { gsap } from "gsap";
+import { toast } from "react-toastify";
 
 const Register = ({ isLogin, setIsLogin }) => {
   const [userData, setUserData] = useState({ fullName: "", email: "", password: "" });
@@ -50,24 +49,24 @@ const Register = ({ isLogin, setIsLogin }) => {
     gsap.to(buttonRef.current, { scale: 0.95, duration: 0.3, ease: "power1.inOut" });
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
-      const user = userCredential.user;
+      const { id } = await signUpWithEmail(userData.email, userData.password, userData.fullName);
 
-      const userDocRef = doc(db, "users", user.uid);
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        username: user.email?.split("@")[0],
-        fullName: userData.fullName,
-        image: "",
-      });
+      await supabase
+        .from("users")
+        .insert({
+          id,
+          email: userData.email,
+          username: userData.email.split("@")[0],
+          full_name: userData.fullName,
+          image: "",
+        });
 
       gsap.to(formRef.current, {
         opacity: 0,
         y: -50,
         duration: 0.8,
         ease: "power3.in",
-        onComplete: () => alert("Registration Successful"),
+        onComplete: () => toast.success("Registration Successful"),
       });
     } catch (error) {
       console.error("Registration Error:", error.message);
@@ -96,7 +95,7 @@ const Register = ({ isLogin, setIsLogin }) => {
   };
 
   return (
-    <section className=" background-image flex items-center justify-center min-h-screen   p-4">
+    <section className="background-image flex items-center justify-center min-h-screen p-4">
       <div
         ref={formRef}
         className="p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center"
@@ -155,7 +154,7 @@ const Register = ({ isLogin, setIsLogin }) => {
         <div className="mt-5 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm  text-green-500 underline hover:text-green-800 transition-colors"
+            className="text-sm text-green-500 underline hover:text-green-800 transition-colors"
           >
             Already have an account? Sign In
           </button>
@@ -166,7 +165,7 @@ const Register = ({ isLogin, setIsLogin }) => {
 };
 
 Register.propTypes = {
-  isLogin: PropTypes.bool.isRequired, // Corrected from func to bool
+  isLogin: PropTypes.bool.isRequired,
   setIsLogin: PropTypes.func.isRequired,
 };
 

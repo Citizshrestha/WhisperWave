@@ -8,29 +8,26 @@ import {
   RiArrowDownFill,
 } from "react-icons/ri";
 import logo from "../../public/assets/logo.png";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase/firebase";
+import { signOut } from "../supabase/supabase";
+import { toast } from "react-toastify";
 
 const NavLink = () => {
-  
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await signOut();
     } catch (err) {
-      alert("Logout error: " + err.message);
+      toast.error("Logout error: " + err.message);
     }
   };
 
-
-  
   return (
     <section
-    style={{ background: 'linear-gradient(to bottom, #12A1C4, #011C5E)' }}
-    
-    className="sticky top-0 h-[7vh] lg:h-[100vh] w-full lg:w-[9.5rem]  flex lg:flex-col py-8 lg:py-0">
+      style={{ background: 'linear-gradient(to bottom, #12A1C4, #011C5E)' }}
+      className="sticky top-0 h-[7vh] lg:h-[100vh] w-full lg:w-[9.5rem] flex lg:flex-col py-8 lg:py-0"
+    >
       <div className="flex items-center justify-between w-full px-2 lg:flex-col lg:items-start lg:gap-10 lg:px-0">
         {/* Logo Section */}
-        <div className="flex h-[83px] items-center justify-center  border-[#fff] w-full p-4">
+        <div className="flex h-[83px] items-center justify-center border-[#fff] w-full p-4">
           <span className="flex items-center justify-center">
             <img
               src={logo}
