@@ -4,7 +4,6 @@ import { supabase, signInWithEmail } from "../supabase/supabase";
 import PropTypes from "prop-types";
 import { gsap } from "gsap";
 import { toast } from "react-toastify";
-import User1 from "../../public/assets/user1.png"
 
 const Login = ({ isLogin, setIsLogin }) => {
   const [userData, setUserData] = useState({ email: "", password: "" });
