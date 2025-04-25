@@ -85,6 +85,31 @@ export const uploadImage = async (file, path, bucket = "chatimages", onProgress 
   }
 };
 
+export const uploadProfileImage = async (file) => {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const fileName = sanitizeFileName(`${user.id}_${Date.now()}_${file.name}`);
+  const path = `profiles/${fileName}`;
+  
+  const { error: uploadError } = await supabase
+    .storage
+    .from("avatars") // your profile images bucket
+    .upload(path, file, { cacheControl: "3600", upsert: true });
+
+  if (uploadError) throw new Error("Upload failed");
+
+  const { data: signedUrlData, error: urlError } = await supabase.storage
+    .from("avatars")
+    .createSignedUrl(path, 60 * 60); // 1 hour
+
+  if (urlError || !signedUrlData?.signedUrl) {
+    throw new Error("URL generation failed");
+  }
+
+  return signedUrlData.signedUrl;
+};
+
 // Improved listenForChats with better error handling
 export const listenForChats = (setChats) => {
   let subscription;

@@ -4,6 +4,7 @@ import { supabase, signInWithEmail } from "../supabase/supabase";
 import PropTypes from "prop-types";
 import { gsap } from "gsap";
 import { toast } from "react-toastify";
+import User1 from "../../public/assets/user1.png"
 
 const Login = ({ isLogin, setIsLogin }) => {
   const [userData, setUserData] = useState({ email: "", password: "" });
@@ -59,7 +60,7 @@ const Login = ({ isLogin, setIsLogin }) => {
           email: userData.email,
           username: userData.email.split("@")[0],
           full_name: userData.email.split("@")[0].charAt(0).toUpperCase() + userData.email.split("@")[0].slice(1),
-          image: "",
+          image: userData.image,
         });
 
       gsap.to(formRef.current, {
