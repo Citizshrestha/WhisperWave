@@ -10,6 +10,7 @@ const Login = ({ isLogin, setIsLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const imageRef = useRef(null);
   const formRef = useRef(null);
   const buttonRef = useRef(null);
 
@@ -31,6 +32,12 @@ const Login = ({ isLogin, setIsLogin }) => {
       buttonRef.current,
       { opacity: 0, scale: 0.8 },
       { opacity: 1, scale: 1, duration: 0.8, ease: "elastic.out(1, 0.5)", delay: 1 }
+    );
+
+    gsap.fromTo(
+      imageRef.current,
+      { opacity: 0, x: -100, scale: 0.5 },
+      { opacity: 1, x: 0, duration: 1.2, ease: "power3.out", delay: 0.3 }
     );
   }, []);
 
@@ -100,22 +107,32 @@ const Login = ({ isLogin, setIsLogin }) => {
   };
 
   return (
-    <section className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br background-image">
+    <section className="flex flex-col relative w-full lg:flex-row items-center justify-center min-h-screen p-4 bg-gradient-to-br background-image from-green-100 to-white">
+      <div className="absolute left-40 lg:w-[50%] mb-8 lg:mb-0">
+        <img
+          ref={imageRef}
+          src="/assets/20250501_1251_Girl Texting App_remix_01jt5am0rsfwd9kzzkmprjknn8.png"
+          alt="Login illustration"
+          className="w-[100%] h-[80rem] rounded-xl shadow-md object-contain"
+        />
+      </div>
+
+      {/* Login Form */}
       <div
         ref={formRef}
-        className="p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center"
+        className="bg-white absolute right-80 h-[70%] w-[100rem] shadow-lg rounded-xl w-full lg:w-[22rem] p-6 flex flex-col items-center justify-center"
       >
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#008C72]">Login to WhisperWave</h1>
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-bold text-[#008C72]"> WhisperWave</h1>
           <p className="mt-1 text-sm text-gray-600">Welcome back, Login to continue</p>
         </div>
 
-        <form onSubmit={handleLoginAuth} className="flex flex-col w-full gap-3">
+        <form onSubmit={handleLoginAuth} className="flex flex-col w-[100%] gap-3">
           <input
             name="email"
             value={userData.email}
             onChange={handleChangeUserData}
-            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#00493985] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             type="email"
             placeholder="Email"
             required
@@ -124,17 +141,17 @@ const Login = ({ isLogin, setIsLogin }) => {
             name="password"
             value={userData.password}
             onChange={handleChangeUserData}
-            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#00493985] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             type="password"
             placeholder="Password"
             required
           />
-          {error && <p className="mb-3 text-sm text-center text-red-500">{error}</p>}
+          {error && <p className="text-sm text-center text-red-500">{error}</p>}
           <button
             ref={buttonRef}
             type="submit"
             disabled={isLoading}
-            className={`w-full p-2 bg-[#01aa85] text-white font-bold rounded-md flex items-center justify-center gap-2 transition-colors ${
+            className={`w-full p-2 bg-[#01aa85] text-white font-bold rounded-md flex items-center justify-center gap-2 transition-transform will-change-transform ${
               isLoading ? "opacity-70 cursor-not-allowed" : "hover:bg-[#008970]"
             }`}
             onMouseEnter={() => handleButtonHover(true)}
@@ -155,7 +172,7 @@ const Login = ({ isLogin, setIsLogin }) => {
         <div className="mt-5 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-green-500 underline transition-colors hover:text-green-800"
+            className="text-sm text-green-500 underline transition-colors hover:text-green-600"
           >
             Not have an account? Register
           </button>

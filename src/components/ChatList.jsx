@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import { RiMore2Fill } from "react-icons/ri";
 import SearchModal from "./SearchModal";
 import { formatTimestamp } from "../utils/formatTimeStamp";
-import { supabase, getCurrentUser, sendMessage, uploadImage, listenForChats } from "../supabase/supabase";
+import { supabase, getCurrentUser, sendMessage, uploadProfileImage, uploadMessageImage, listenForChats } from "../supabase/supabase";
 import { toast } from "react-toastify";
 
 const Chatlist = ({ setSelectedUser }) => {
@@ -145,7 +145,6 @@ const Chatlist = ({ setSelectedUser }) => {
       return;
     }
 
-    
     setUploading(true);
     try {
       const isValidUUID = (str) =>
@@ -162,15 +161,18 @@ const Chatlist = ({ setSelectedUser }) => {
 
         if (!user1 || !user2) throw new Error("Invalid user data");
 
-        const imageUrl = await uploadImage(file, chatId);
+        const imageUrl = await uploadMessageImage(file, chatId, (progress) => {
+          console.log(`Chat image upload progress: ${progress}%`);
+        });
         await sendMessage("", chatId, user1, user2, imageUrl);
         toast.success("Image sent successfully!");
       } else {
         // Profile image upload
         console.log("Processing profile image upload");
         const user = await getCurrentUser();
-        const filePath = `profiles/${user.id}`;
-        const imageUrl = await uploadImage(file, filePath);
+        const imageUrl = await uploadProfileImage(file, (progress) => {
+          console.log(`Profile image upload progress: ${progress}%`);
+        });
         console.log("Profile image URL:", imageUrl);
         const { error: updateError } = await supabase
           .from("users")

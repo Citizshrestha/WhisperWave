@@ -3,7 +3,7 @@ import { v5 as uuidv5 } from 'uuid';
 import defaultAvatar from "../../public/assets/default.jpg";
 import { formatTimestamp } from "../utils/formatTimeStamp";
 import { RiSendPlaneFill, RiImageAddLine } from "react-icons/ri";
-import { supabase, getCurrentUser, listenForMessages, sendMessage, updateMessage, deleteMessage, uploadImage } from "../supabase/supabase";
+import { supabase, getCurrentUser, listenForMessages, sendMessage, updateMessage, deleteMessage, uploadMessageImage } from "../supabase/supabase";
 import logo from "../../public/assets/logo.png";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
@@ -52,18 +52,36 @@ const Chatbox = ({ selectedUser }) => {
       setMessages([]);
       return;
     }
-  
+
     console.log("Subscribing to messages for chatId:", chatId);
     const unsubscribe = listenForMessages(chatId, (incomingMessages) => {
+      console.log("Received messages update:", incomingMessages);
       // Ensure we always have an array
       const processedMessages = Array.isArray(incomingMessages) 
         ? incomingMessages 
         : [];
-        
-      setMessages(processedMessages);
+      
+      // Merge with existing messages, updating or adding new ones
+      setMessages(prev => {
+        const updatedMessages = [...prev];
+        processedMessages.forEach(newMsg => {
+          const existingIndex = updatedMessages.findIndex(m => m.id === newMsg.id);
+          if (existingIndex !== -1) {
+            // Update existing message (e.g., remove isPending)
+            updatedMessages[existingIndex] = { ...newMsg, isPending: false };
+          } else {
+            // Add new message if not already present
+            if (!updatedMessages.some(m => m.id === newMsg.id)) {
+              updatedMessages.push({ ...newMsg, isPending: false });
+            }
+          }
+        });
+        return updatedMessages.sort((a, b) => a.timestamp - b.timestamp);
+      });
     });
-  
+
     return () => {
+      console.log("Unsubscribing from messages for chatId:", chatId);
       if (unsubscribe) unsubscribe();
     };
   }, [chatId, user1, user2]);
@@ -102,13 +120,14 @@ const Chatbox = ({ selectedUser }) => {
 
     if (!chat) {
       console.log("Creating new chat with ID:", chatId);
-      await supabase
+      const { error: insertError } = await supabase
         .from("chats")
         .insert({
           id: chatId,
           users: [user1, user2],
           created_at: new Date().toISOString(),
         });
+      if (insertError) throw new Error(`Failed to create chat: ${insertError.message}`);
     }
   };
 
@@ -119,16 +138,32 @@ const Chatbox = ({ selectedUser }) => {
       return;
     }
 
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const newMessage = {
+      id: tempId,
+      chat_id: chatId,
+      text: messageText,
+      image_url: "",
+      sender_id: user1,
+      timestamp: new Date(),
+      isPending: true,
+    };
+
+    setMessages(prev => [...prev, newMessage].sort((a, b) => a.timestamp - b.timestamp));
+    setMessageText("");
+    setError(null);
+
     try {
       await ensureChatExists();
       await sendMessage(messageText, chatId, user1, user2);
-      setMessageText("");
-      setError(null);
       toast.success("Message sent successfully!");
     } catch (error) {
       console.error("Error sending message:", error);
       setError(`Failed to send message: ${error.message}`);
       toast.error(`Failed to send message: ${error.message}`);
+      // Rollback optimistic update
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
     }
   };
 
@@ -143,9 +178,23 @@ const Chatbox = ({ selectedUser }) => {
     setUploadProgress(0);
     setError(null);
 
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const newMessage = {
+      id: tempId,
+      chat_id: chatId,
+      text: "",
+      image_url: URL.createObjectURL(file), // Temporary local URL for preview
+      sender_id: user1,
+      timestamp: new Date(),
+      isPending: true,
+    };
+
+    setMessages(prev => [...prev, newMessage].sort((a, b) => a.timestamp - b.timestamp));
+
     try {
       await ensureChatExists();
-      const imageUrl = await uploadImage(file, chatId, "chatimages", (progress) => {
+      const imageUrl = await uploadMessageImage(file, chatId, (progress) => {
         setUploadProgress(progress);
       });
       console.log("Image uploaded, URL:", imageUrl);
@@ -156,6 +205,8 @@ const Chatbox = ({ selectedUser }) => {
       console.error("Error uploading image:", error);
       setError(`Image upload failed: ${error.message}`);
       toast.error(`Image upload failed: ${error.message}`);
+      // Rollback optimistic update
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -168,16 +219,37 @@ const Chatbox = ({ selectedUser }) => {
       return;
     }
 
+    // Optimistic update
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, text: newText, edited: true, edited_at: new Date().toISOString(), isPending: true }
+          : msg
+      )
+    );
+
     try {
       await updateMessage(chatId, messageId, newText);
       setEditingMessageId(null);
       setEditedText("");
       setError(null);
       toast.success("Message updated successfully!");
+      // Remove isPending flag
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId ? { ...msg, isPending: false } : msg
+        )
+      );
     } catch (error) {
       console.error("Error editing message:", error);
       setError(`Failed to edit message: ${error.message}`);
       toast.error(`Failed to edit message: ${error.message}`);
+      // Rollback optimistic update
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId ? { ...msg, text: editedText, isPending: false } : msg
+        )
+      );
     }
   };
 
@@ -192,6 +264,9 @@ const Chatbox = ({ selectedUser }) => {
       return;
     }
 
+    // Optimistic update
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
     try {
       await deleteMessage(chatId, messageId);
       setError(null);
@@ -200,6 +275,18 @@ const Chatbox = ({ selectedUser }) => {
       console.error("Error deleting message:", error);
       setError(`Failed to delete message: ${error.message}`);
       toast.error(`Failed to delete message: ${error.message}`);
+      // Rollback optimistic update (re-fetch messages)
+      const { data, error: fetchError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("timestamp", { ascending: true });
+      if (fetchError) {
+        console.error("Failed to re-fetch messages:", fetchError);
+        setMessages([]);
+      } else {
+        setMessages(data.map(msg => ({ ...msg, timestamp: new Date(msg.timestamp) })));
+      }
     }
   };
 
@@ -268,18 +355,21 @@ const Chatbox = ({ selectedUser }) => {
                           </div>
                         ) : (
                           <>
-                            <div className="relative flex items-center justify-center p-6 text-blue-700 bg-blue-100 rounded-lg shadow-sm group">
+                            <div className={`relative flex items-center justify-center p-6 text-blue-700 bg-blue-100 rounded-lg shadow-sm group ${msg.isPending ? 'opacity-50' : ''}`}>
                               {msg.image_url ? (
                                 <img 
                                   src={msg.image_url} 
                                   alt="Sent Image" 
                                   className="h-auto max-w-[300px] rounded" 
+                                  onError={(e) => {
+                                    if (msg.isPending) e.target.src = defaultAvatar; // Fallback for temporary URLs
+                                  }}
                                 />
                               ) : (
                                 <h4>{msg.text}</h4>
                               )}
                               <div className="absolute top-0 right-0 flex-col hidden gap-1 p-1 group-hover:flex">
-                                {!msg.image_url && (
+                                {!msg.image_url && !msg.isPending && (
                                   <button
                                     onClick={() => startEditing(msg.id, msg.text)}
                                     className="px-2 py-1 text-xs text-white bg-blue-500 rounded"
@@ -287,16 +377,19 @@ const Chatbox = ({ selectedUser }) => {
                                     Edit
                                   </button>
                                 )}
-                                <button
-                                  onClick={() => handleDeleteMessage(msg.id)}
-                                  className="px-2 py-1 text-xs text-white bg-red-500 rounded"
-                                >
-                                  Delete
-                                </button>
+                                {!msg.isPending && (
+                                  <button
+                                    onClick={() => handleDeleteMessage(msg.id)}
+                                    className="px-2 py-1 text-xs text-white bg-red-500 rounded"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
                               </div>
                             </div>
                             <p className="mt-3 text-right text-gray-400 text-xs">
                               {formatTimestamp(msg?.timestamp)}
+                              {msg.isPending && " (Sending...)"}
                             </p>
                           </>
                         )}
@@ -312,7 +405,7 @@ const Chatbox = ({ selectedUser }) => {
                         alt="Sender profile" 
                       />
                       <div>
-                        <div className="flex items-center justify-center p-6 text-blue-700 bg-blue-100 rounded-lg shadow-sm">
+                        <div className={`flex items-center justify-center p-6 text-blue-700 bg-blue-100 rounded-lg shadow-sm ${msg.isPending ? 'opacity-50' : ''}`}>
                           {msg.image_url ? (
                             <img 
                               src={msg.image_url} 
@@ -325,6 +418,7 @@ const Chatbox = ({ selectedUser }) => {
                         </div>
                         <p className="mt-3 text-gray-400 text-xs">
                           {formatTimestamp(msg?.timestamp)}
+                          {msg.isPending && " (Sending...)"}
                         </p>
                       </div>
                     </span>

@@ -12,6 +12,7 @@ const Register = ({ isLogin, setIsLogin }) => {
 
   const formRef = useRef(null);
   const buttonRef = useRef(null);
+  const imageRef = useRef(null);
 
   useEffect(() => {
     gsap.set(formRef.current, { opacity: 1 });
@@ -31,6 +32,12 @@ const Register = ({ isLogin, setIsLogin }) => {
       buttonRef.current,
       { opacity: 0, scale: 0.8 },
       { opacity: 1, scale: 1, duration: 0.8, ease: "elastic.out(1, 0.5)", delay: 1 }
+    );
+
+    gsap.fromTo(
+      imageRef.current,
+      { opacity: 0, x: -100, scale: 0.5 },
+      { opacity: 1, x: 0, duration: 1.2, ease: "power3.out", delay: 0.3 }
     );
   }, []);
 
@@ -95,14 +102,25 @@ const Register = ({ isLogin, setIsLogin }) => {
   };
 
   return (
-    <section className="background-image flex items-center justify-center min-h-screen p-4">
+    <section className="flex flex-col relative w-full lg:flex-row items-center justify-center min-h-screen p-4 bg-gradient-to-br background-image from-green-100 to-white">
+      {/* Illustration */}
+      <div className="absolute left-40 lg:w-[50%] mb-8 lg:mb-0">
+        <img
+          ref={imageRef}
+          src="/assets/20250501_1251_Girl Texting App_remix_01jt5am0rsfwd9kzzkmprjknn8.png"
+          alt="Register illustration"
+          className="w-full h-[80rem] rounded-xl shadow-md object-contain"
+        />
+      </div>
+
+      {/* Register Form */}
       <div
         ref={formRef}
-        className="p-5 bg-white shadow-lg rounded-xl h-[27rem] w-[20rem] flex flex-col items-center justify-center"
+        className="bg-white absolute right-80 h-[70%] w-[100rem] shadow-lg rounded-xl w-full lg:w-[22rem] p-6 flex flex-col items-center justify-center"
       >
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-green-800">Sign Up for WhisperWave</h1>
-          <p className="text-sm text-gray-600 mt-1">Welcome, Create an account to start chatting</p>
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-bold text-[#008C72]">WhisperWave</h1>
+          <p className="mt-1 text-sm text-gray-600">Welcome, Create an account to start chatting</p>
         </div>
 
         <div className="w-full flex flex-col gap-3">
@@ -110,7 +128,7 @@ const Register = ({ isLogin, setIsLogin }) => {
             type="text"
             name="fullName"
             onChange={handleChangeUserData}
-            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#00493985] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             placeholder="Full Name"
             required
           />
@@ -118,7 +136,7 @@ const Register = ({ isLogin, setIsLogin }) => {
             type="email"
             name="email"
             onChange={handleChangeUserData}
-            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#00493985] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             placeholder="Email"
             required
           />
@@ -126,7 +144,7 @@ const Register = ({ isLogin, setIsLogin }) => {
             type="password"
             name="password"
             onChange={handleChangeUserData}
-            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#004939858] focus:border-green-400 focus:ring-1 focus:ring-green-200"
+            className="input-field w-full p-2 border border-green-200 rounded-md bg-[#01aa851d] text-[#004939f3] font-medium outline-none placeholder:text-[#00493985] focus:border-green-400 focus:ring-1 focus:ring-green-200"
             placeholder="Password"
             required
           />
@@ -154,7 +172,7 @@ const Register = ({ isLogin, setIsLogin }) => {
         <div className="mt-5 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-green-500 underline hover:text-green-800 transition-colors"
+            className="text-sm text-green-500 underline hover:text-green-600 transition-colors"
           >
             Already have an account? Sign In
           </button>

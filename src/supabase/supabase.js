@@ -33,13 +33,64 @@ export const getCurrentUser = async () => {
   }
 };
 
-// Enhanced uploadImage with better error handling
-export const uploadImage = async (file, path, bucket = "chatimages", onProgress = null) => {
+// Upload profile image to profiles bucket
+export const uploadProfileImage = async (file, onProgress = null) => {
   try {
     const user = await getCurrentUser();
     if (!user) throw new Error("User not authenticated");
     if (!file) throw new Error("No file provided");
-    if (!path) throw new Error("No file path provided");
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      throw new Error("Invalid file type. Only JPEG, PNG, GIF, and WEBP are allowed.");
+    }
+
+    // Validate file size
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error("File too large. Maximum size is 5MB.");
+    }
+
+    const sanitizedFileName = sanitizeFileName(`${user.id}_${Date.now()}_${file.name}`);
+    const filePath = `${user.id}/${sanitizedFileName}`;
+
+    // Progress tracking
+    if (onProgress) onProgress(0);
+
+    // Upload file to profiles bucket
+    const { error: uploadError } = await supabase.storage
+      .from("profiles")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (uploadError) throw uploadError;
+    if (onProgress) onProgress(50);
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from("profiles")
+      .getPublicUrl(filePath);
+
+    if (!publicUrl) throw new Error("Failed to generate public URL");
+    if (onProgress) onProgress(100);
+
+    return publicUrl;
+  } catch (error) {
+    console.error("Profile image upload failed:", error);
+    throw new Error(`Profile image upload failed: ${error.message}`);
+  }
+};
+
+// Upload message image to chatimages bucket
+export const uploadMessageImage = async (file, chatId, onProgress = null) => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+    if (!file) throw new Error("No file provided");
+    if (!chatId) throw new Error("No chat ID provided");
 
     // Validate file type
     const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -54,14 +105,14 @@ export const uploadImage = async (file, path, bucket = "chatimages", onProgress 
     }
 
     const sanitizedFileName = sanitizeFileName(`${Date.now()}_${file.name}`);
-    const filePath = `${path}/${sanitizedFileName}`;
+    const filePath = `${chatId}/${sanitizedFileName}`;
 
     // Progress tracking
     if (onProgress) onProgress(0);
 
-    // Upload file
+    // Upload file to chatimages bucket
     const { error: uploadError } = await supabase.storage
-      .from(bucket)
+      .from("chatimages")
       .upload(filePath, file, {
         cacheControl: "3600",
         upsert: false,
@@ -72,7 +123,7 @@ export const uploadImage = async (file, path, bucket = "chatimages", onProgress 
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
+      .from("chatimages")
       .getPublicUrl(filePath);
 
     if (!publicUrl) throw new Error("Failed to generate public URL");
@@ -80,34 +131,9 @@ export const uploadImage = async (file, path, bucket = "chatimages", onProgress 
 
     return publicUrl;
   } catch (error) {
-    console.error("Image upload failed:", error);
-    throw new Error(`Upload failed: ${error.message}`);
+    console.error("Message image upload failed:", error);
+    throw new Error(`Message image upload failed: ${error.message}`);
   }
-};
-
-export const uploadProfileImage = async (file) => {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const fileName = sanitizeFileName(`${user.id}_${Date.now()}_${file.name}`);
-  const path = `profiles/${fileName}`;
-  
-  const { error: uploadError } = await supabase
-    .storage
-    .from("avatars") // your profile images bucket
-    .upload(path, file, { cacheControl: "3600", upsert: true });
-
-  if (uploadError) throw new Error("Upload failed");
-
-  const { data: signedUrlData, error: urlError } = await supabase.storage
-    .from("avatars")
-    .createSignedUrl(path, 60 * 60); // 1 hour
-
-  if (urlError || !signedUrlData?.signedUrl) {
-    throw new Error("URL generation failed");
-  }
-
-  return signedUrlData.signedUrl;
 };
 
 // Improved listenForChats with better error handling
@@ -140,6 +166,7 @@ export const listenForChats = (setChats) => {
             filter: `users=cs.{${user.id}}`,
           },
           async (payload) => {
+            console.log("Chats subscription event:", payload);
             try {
               if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
                 const { data: chat, error: fetchError } = await supabase
@@ -164,9 +191,12 @@ export const listenForChats = (setChats) => {
             }
           }
         )
-        .subscribe();
+        .subscribe((status, error) => {
+          console.log("Chats subscription status:", status);
+          if (error) console.error("Chats subscription error:", error);
+        });
     } catch (error) {
-      console.error("Chat subscription error:", error);
+      console.error("Chat subscription initialization error:", error);
       setChats([]);
     }
   };
@@ -174,7 +204,10 @@ export const listenForChats = (setChats) => {
   initializeSubscription();
 
   return () => {
-    if (subscription) supabase.removeChannel(subscription);
+    if (subscription) {
+      console.log("Removing chats channel");
+      supabase.removeChannel(subscription);
+    }
   };
 };
 
@@ -193,7 +226,7 @@ export const sendMessage = async (messageText, chatId, user1, user2, imageUrl = 
       .from("chats")
       .upsert({
         id: chatId,
-        users: [user1, user2],
+        users: [user1, user2], // UUID[] in schema
         last_message: lastMessage,
         last_message_timestamp: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -202,7 +235,7 @@ export const sendMessage = async (messageText, chatId, user1, user2, imageUrl = 
     if (chatError) throw chatError;
 
     // Insert message
-    const { error: messageError } = await supabase
+    const { data, error: messageError } = await supabase
       .from("messages")
       .insert({
         chat_id: chatId,
@@ -210,9 +243,13 @@ export const sendMessage = async (messageText, chatId, user1, user2, imageUrl = 
         image_url: imageUrl || "",
         sender_id: user.id,
         timestamp: new Date().toISOString(),
-      });
+      })
+      .select()
+      .single();
 
     if (messageError) throw messageError;
+
+    return data; // Return the inserted message for optimistic updates
   } catch (error) {
     console.error("Failed to send message:", error);
     throw new Error(`Message failed: ${error.message}`);
@@ -222,7 +259,7 @@ export const sendMessage = async (messageText, chatId, user1, user2, imageUrl = 
 // Optimized listenForMessages
 export const listenForMessages = (chatId, callback) => {
   if (!chatId) {
-    console.warn("No chatId provided");
+    console.warn("No chatId provided for messages subscription");
     return () => {};
   }
 
@@ -236,9 +273,10 @@ export const listenForMessages = (chatId, callback) => {
         .order("timestamp", { ascending: true });
 
       if (error) throw error;
+      console.log("Initial messages fetched for chatId:", chatId, data);
       callback(data.map(msg => ({ ...msg, timestamp: new Date(msg.timestamp) })));
     } catch (error) {
-      console.error("Failed to fetch messages:", error);
+      console.error("Failed to fetch messages for chatId:", chatId, error);
       callback([]);
     }
   };
@@ -257,6 +295,7 @@ export const listenForMessages = (chatId, callback) => {
         filter: `chat_id=eq.${chatId}`,
       },
       (payload) => {
+        console.log("Messages subscription event for chatId:", chatId, payload);
         const message = {
           ...payload.new,
           timestamp: new Date(payload.new.timestamp)
@@ -267,6 +306,13 @@ export const listenForMessages = (chatId, callback) => {
           
           switch (payload.eventType) {
             case "INSERT":
+              // Prevent duplicates
+              if (current.some(m => m.id === message.id)) {
+                console.log("Duplicate message detected, skipping:", message.id);
+                return current.map(m => 
+                  m.id === message.id ? { ...message, isPending: false } : m
+                );
+              }
               return [...current, message].sort((a, b) => a.timestamp - b.timestamp);
             case "UPDATE":
               return current.map(m => m.id === message.id ? message : m)
@@ -279,9 +325,15 @@ export const listenForMessages = (chatId, callback) => {
         });
       }
     )
-    .subscribe();
+    .subscribe((status, error) => {
+      console.log("Messages subscription status for chatId:", chatId, status);
+      if (error) console.error("Messages subscription error for chatId:", chatId, error);
+    });
 
-  return () => supabase.removeChannel(channel);
+  return () => {
+    console.log("Removing messages channel for chatId:", chatId);
+    supabase.removeChannel(channel);
+  };
 };
 
 // Improved updateMessage
@@ -292,14 +344,16 @@ export const updateMessage = async (chatId, messageId, newText) => {
     }
 
     // Update message
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("messages")
       .update({
         text: newText,
         edited: true,
         edited_at: new Date().toISOString(),
       })
-      .eq("id", messageId);
+      .eq("id", messageId)
+      .select()
+      .single();
 
     if (error) throw error;
 
@@ -321,6 +375,8 @@ export const updateMessage = async (chatId, messageId, newText) => {
         })
         .eq("id", chatId);
     }
+
+    return data; // Return updated message
   } catch (error) {
     console.error("Failed to update message:", error);
     throw new Error(`Update failed: ${error.message}`);
